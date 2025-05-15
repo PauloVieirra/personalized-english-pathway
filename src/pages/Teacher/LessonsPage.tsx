@@ -1,0 +1,206 @@
+
+import React, { useState, useEffect } from 'react';
+import MainLayout from '@/components/layout/MainLayout';
+import TeacherSidebar from '@/components/teacher/TeacherSidebar';
+import CreateLessonForm from '@/components/teacher/CreateLessonForm';
+import { useLanguage } from '@/context/LanguageContext';
+import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/lib/supabase';
+import { useToast } from '@/components/ui/use-toast';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tables } from '@/lib/supabase';
+import { PlusCircle, Edit, Trash, Users } from 'lucide-react';
+
+type Lesson = Tables['lessons'];
+
+export default function LessonsPage() {
+  const { t } = useLanguage();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  
+  const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [openCreateDialog, setOpenCreateDialog] = useState(false);
+
+  const loadLessons = async () => {
+    if (!user) return;
+    
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('lessons')
+        .select('*')
+        .eq('teacher_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setLessons(data || []);
+    } catch (error: any) {
+      console.error('Error loading lessons:', error.message);
+      toast({
+        title: t('error'),
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadLessons();
+  }, [user]);
+
+  const handleCreateSuccess = () => {
+    setOpenCreateDialog(false);
+    loadLessons();
+  };
+
+  const handleDeleteLesson = async (lessonId: string) => {
+    if (!confirm('Tem certeza que deseja excluir esta aula?')) {
+      return;
+    }
+
+    try {
+      // First delete any student assignments for this lesson
+      const { error: assignmentError } = await supabase
+        .from('student_lessons')
+        .delete()
+        .eq('lesson_id', lessonId);
+
+      if (assignmentError) throw assignmentError;
+
+      // Then delete the lesson
+      const { error } = await supabase
+        .from('lessons')
+        .delete()
+        .eq('id', lessonId);
+
+      if (error) throw error;
+
+      // Update the local state
+      setLessons(prev => prev.filter(lesson => lesson.id !== lessonId));
+
+      toast({
+        title: t('success'),
+        description: 'Aula excluída com sucesso.'
+      });
+    } catch (error: any) {
+      console.error('Error deleting lesson:', error.message);
+      toast({
+        title: t('error'),
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  return (
+    <MainLayout requireAuth allowedRoles={['teacher']}>
+      <div className="flex min-h-screen">
+        <TeacherSidebar />
+        <div className="flex-1 p-8">
+          <div className="flex justify-between items-center mb-8">
+            <h1 className="text-3xl font-bold">{t('lessons')}</h1>
+            <Dialog open={openCreateDialog} onOpenChange={setOpenCreateDialog}>
+              <DialogTrigger asChild>
+                <Button className="btn-primary">
+                  <PlusCircle className="w-4 h-4 mr-2" />
+                  {t('createLesson')}
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[600px]">
+                <DialogHeader>
+                  <DialogTitle>{t('createLesson')}</DialogTitle>
+                </DialogHeader>
+                <CreateLessonForm onSuccess={handleCreateSuccess} />
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('lessons')}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="text-center py-4">{t('loading')}</div>
+              ) : lessons.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500 mb-4">Você ainda não criou nenhuma aula.</p>
+                  <Button onClick={() => setOpenCreateDialog(true)}>
+                    {t('createLesson')}
+                  </Button>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t('title')}</TableHead>
+                      <TableHead>Data de Criação</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {lessons.map(lesson => (
+                      <TableRow key={lesson.id}>
+                        <TableCell className="font-medium">{lesson.title}</TableCell>
+                        <TableCell>
+                          {new Date(lesson.created_at).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end space-x-2">
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              className="flex items-center gap-1"
+                              onClick={() => {
+                                toast({
+                                  title: "Funcionalidade em breve",
+                                  description: "A edição de aulas estará disponível em breve."
+                                });
+                              }}
+                            >
+                              <Edit className="h-3.5 w-3.5" />
+                              <span className="sr-only">Editar</span>
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              className="flex items-center gap-1 text-brand-blue"
+                              onClick={() => {
+                                toast({
+                                  title: "Funcionalidade em breve",
+                                  description: "A atribuição de aulas estará disponível em breve."
+                                });
+                              }}
+                            >
+                              <Users className="h-3.5 w-3.5" />
+                              <span className="sr-only">Atribuir</span>
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              className="flex items-center gap-1 text-red-500"
+                              onClick={() => handleDeleteLesson(lesson.id)}
+                            >
+                              <Trash className="h-3.5 w-3.5" />
+                              <span className="sr-only">Excluir</span>
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </MainLayout>
+  );
+}
