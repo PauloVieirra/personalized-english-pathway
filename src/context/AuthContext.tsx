@@ -29,8 +29,86 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
+  // Função para verificar se as tabelas necessárias existem
+  const ensureTablesExist = async () => {
+    try {
+      // Tabelas que precisamos criar
+      const tables = [
+        {
+          name: 'users',
+          query: `
+            CREATE TABLE IF NOT EXISTS users (
+              id UUID PRIMARY KEY,
+              email TEXT NOT NULL,
+              name TEXT NOT NULL,
+              role TEXT NOT NULL,
+              status TEXT NOT NULL DEFAULT 'active',
+              created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            )
+          `
+        },
+        {
+          name: 'lessons',
+          query: `
+            CREATE TABLE IF NOT EXISTS lessons (
+              id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+              title TEXT NOT NULL,
+              content TEXT NOT NULL,
+              video_url TEXT,
+              teacher_id UUID REFERENCES users(id),
+              created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            )
+          `
+        },
+        {
+          name: 'student_lessons',
+          query: `
+            CREATE TABLE IF NOT EXISTS student_lessons (
+              id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+              student_id UUID REFERENCES users(id),
+              lesson_id UUID REFERENCES lessons(id),
+              completed BOOLEAN DEFAULT false,
+              score NUMERIC,
+              feedback TEXT,
+              assigned_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            )
+          `
+        }
+      ];
+
+      // Criar extensão uuid se necessário
+      await supabase.rpc('create_uuid_extension');
+
+      // Verificar e criar cada tabela
+      for (const table of tables) {
+        // Verificar se a tabela já existe
+        const { error: checkError } = await supabase
+          .from(table.name)
+          .select('id')
+          .limit(1);
+          
+        if (checkError && checkError.code === '42P01') {
+          console.log(`Tabela ${table.name} não existe. Criando...`);
+          
+          // Criar a tabela
+          const { error: createError } = await supabase.rpc('execute_sql', {
+            sql_query: table.query
+          });
+          
+          if (createError) {
+            console.error(`Erro ao criar tabela ${table.name}:`, createError);
+            throw createError;
+          }
+          console.log(`Tabela ${table.name} criada com sucesso.`);
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao verificar/criar tabelas:', error);
+    }
+  };
+
   useEffect(() => {
-    // Set up auth state listener
+    // Configurar listener para mudanças no estado de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
       console.log('Auth state changed:', event);
       setSession(newSession);
@@ -45,7 +123,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(false);
     });
 
-    // Initial session check
+    // Verificar sessão inicial
     supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
       setSession(initialSession);
       setUser(initialSession?.user ?? null);
@@ -57,6 +135,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(false);
     });
 
+    // Verificar/criar as tabelas necessárias
+    ensureTablesExist();
+
     return () => {
       subscription.unsubscribe();
     };
@@ -64,14 +145,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchUserDetails = async (userId: string) => {
     try {
+      // First check if users table exists
       const { data, error } = await supabase
         .from('users')
         .select('*')
         .eq('id', userId)
         .single();
 
-      if (error) {
-        throw error;
+      if (error && error.code === '42P01') {
+        // Table doesn't exist yet
+        console.log('Users table does not exist yet');
+        setUserDetails(null);
+        return;
+      } else if (error) {
+        console.error('Error fetching user details:', error);
+        setUserDetails(null);
+        return;
       }
 
       if (data) {
@@ -105,12 +194,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw error;
       }
 
+      // Buscar detalhes do usuário após login bem-sucedido
+      if (data.user) {
+        await fetchUserDetails(data.user.id);
+      }
+
       toast({
         title: 'Login realizado com sucesso',
         description: 'Bem-vindo de volta!',
       });
-      
-      // Session and user will be set by the auth state listener
     } catch (error: any) {
       console.error('Sign in error:', error.message);
       throw error;
@@ -119,7 +211,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUp = async (email: string, password: string, name: string, role: 'teacher' | 'student') => {
     try {
-      // Create auth user
+      // Garantir que as tabelas existem
+      await ensureTablesExist();
+      
+      // Criar usuário de autenticação
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
@@ -138,7 +233,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error('Falha ao criar usuário');
       }
 
-      // Add user details to the users table
+      console.log('Usuário criado. Inserindo dados na tabela users...');
+      
+      // Adicionar detalhes do usuário na tabela users
       const { error: profileError } = await supabase.from('users').insert([
         {
           id: authData.user.id,
@@ -150,8 +247,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       ]);
 
       if (profileError) {
-        // If profile creation fails, we should ideally delete the auth user,
-        // but Supabase doesn't have a convenient method for this
+        console.error('Erro ao criar perfil:', profileError);
         toast({
           title: 'Erro ao criar perfil',
           description: profileError.message,
@@ -160,13 +256,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw profileError;
       }
 
+      // Atualizar userDetails após registro bem-sucedido
+      setUserDetails({
+        id: authData.user.id,
+        email,
+        name,
+        role,
+        status: 'active'
+      });
+
       toast({
         title: 'Conta criada com sucesso',
         description: 'Bem-vindo ao EngLearn!',
       });
 
     } catch (error: any) {
-      console.error('Sign up error:', error.message);
+      console.error('Sign up error:', error);
       throw error;
     }
   };
@@ -174,6 +279,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
+      setUserDetails(null);
       toast({
         title: 'Logout realizado',
         description: 'Você foi desconectado com sucesso.',

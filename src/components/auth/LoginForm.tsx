@@ -6,13 +6,15 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 export default function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { t } = useLanguage();
-  const { signIn } = useAuth();
+  const { signIn, userDetails } = useAuth();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,10 +22,26 @@ export default function LoginForm() {
     
     try {
       await signIn(email, password);
+      
+      // Aguardar um momento para garantir que userDetails foi atualizado
+      setTimeout(() => {
+        redirectBasedOnRole();
+      }, 1000);
     } catch (error) {
       console.error('Login error:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Função para redirecionar com base no perfil do usuário
+  const redirectBasedOnRole = () => {
+    if (!userDetails) return;
+    
+    if (userDetails.role === 'teacher') {
+      navigate('/teacher/dashboard');
+    } else if (userDetails.role === 'student') {
+      navigate('/student/dashboard');
     }
   };
 
