@@ -9,13 +9,13 @@ import { Loader2 } from 'lucide-react';
 interface MainLayoutProps {
   children: React.ReactNode;
   requireAuth?: boolean;
-  allowedRoles?: ('teacher' | 'student')[];
+  allowedRoles?: ('teacher' | 'student' | 'admin')[];
 }
 
 export default function MainLayout({ 
   children, 
   requireAuth = false,
-  allowedRoles = ['teacher', 'student']
+  allowedRoles = ['teacher', 'student', 'admin']
 }: MainLayoutProps) {
   const { user, userDetails, isLoading } = useAuth();
   const { t } = useLanguage();
