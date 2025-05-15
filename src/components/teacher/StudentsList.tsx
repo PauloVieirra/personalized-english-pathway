@@ -113,7 +113,7 @@ export default function StudentsList() {
               <TableHead>{t('email')}</TableHead>
               <TableHead>{t('status')}</TableHead>
               <TableHead>{t('lessons')}</TableHead>
-              <TableHead className="text-right">{t('actions')}</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
