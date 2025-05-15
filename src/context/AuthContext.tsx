@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabase';
+import { supabase, ensureTables } from '@/lib/supabase';
 import { useToast } from '@/components/ui/use-toast';
 
 type AuthContextType = {
@@ -11,12 +11,12 @@ type AuthContextType = {
     id: string;
     name: string;
     email: string;
-    role: 'teacher' | 'student';
+    role: 'teacher' | 'student' | 'admin';
     status: 'active' | 'blocked';
   } | null;
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, name: string, role: 'teacher' | 'student') => Promise<void>;
+  signUp: (email: string, password: string, name: string, role: 'teacher' | 'student' | 'admin') => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -31,80 +31,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Função para verificar se as tabelas necessárias existem
   const ensureTablesExist = async () => {
-    try {
-      // Tabelas que precisamos criar
-      const tables = [
-        {
-          name: 'users',
-          query: `
-            CREATE TABLE IF NOT EXISTS users (
-              id UUID PRIMARY KEY,
-              email TEXT NOT NULL,
-              name TEXT NOT NULL,
-              role TEXT NOT NULL,
-              status TEXT NOT NULL DEFAULT 'active',
-              created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-            )
-          `
-        },
-        {
-          name: 'lessons',
-          query: `
-            CREATE TABLE IF NOT EXISTS lessons (
-              id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-              title TEXT NOT NULL,
-              content TEXT NOT NULL,
-              video_url TEXT,
-              teacher_id UUID REFERENCES users(id),
-              created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-            )
-          `
-        },
-        {
-          name: 'student_lessons',
-          query: `
-            CREATE TABLE IF NOT EXISTS student_lessons (
-              id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-              student_id UUID REFERENCES users(id),
-              lesson_id UUID REFERENCES lessons(id),
-              completed BOOLEAN DEFAULT false,
-              score NUMERIC,
-              feedback TEXT,
-              assigned_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-            )
-          `
-        }
-      ];
-
-      // Criar extensão uuid se necessário
-      await supabase.rpc('create_uuid_extension');
-
-      // Verificar e criar cada tabela
-      for (const table of tables) {
-        // Verificar se a tabela já existe
-        const { error: checkError } = await supabase
-          .from(table.name)
-          .select('id')
-          .limit(1);
-          
-        if (checkError && checkError.code === '42P01') {
-          console.log(`Tabela ${table.name} não existe. Criando...`);
-          
-          // Criar a tabela
-          const { error: createError } = await supabase.rpc('execute_sql', {
-            sql_query: table.query
-          });
-          
-          if (createError) {
-            console.error(`Erro ao criar tabela ${table.name}:`, createError);
-            throw createError;
-          }
-          console.log(`Tabela ${table.name} criada com sucesso.`);
-        }
-      }
-    } catch (error) {
-      console.error('Erro ao verificar/criar tabelas:', error);
-    }
+    await ensureTables();
   };
 
   useEffect(() => {
@@ -145,22 +72,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchUserDetails = async (userId: string) => {
     try {
-      // First check if users table exists
-      const { data, error } = await supabase
-        .from('users')
+      // Garantir que as tabelas existem
+      await ensureTablesExist();
+      
+      // Primeiro tentar buscar da tabela user_profile
+      let { data, error } = await supabase
+        .from('user_profile')
         .select('*')
         .eq('id', userId)
         .single();
 
-      if (error && error.code === '42P01') {
-        // Table doesn't exist yet
-        console.log('Users table does not exist yet');
-        setUserDetails(null);
-        return;
-      } else if (error) {
-        console.error('Error fetching user details:', error);
-        setUserDetails(null);
-        return;
+      if (error || !data) {
+        // Se não encontrar no user_profile, tentar da tabela users
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', userId)
+          .single();
+          
+        if (userError) {
+          console.error('Error fetching user details:', userError);
+          setUserDetails(null);
+          return;
+        }
+        
+        if (userData) {
+          data = userData;
+        }
       }
 
       if (data) {
@@ -169,7 +107,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           name: data.name,
           email: data.email,
           role: data.role,
-          status: data.status
+          status: data.status || 'active'
         });
       }
     } catch (error) {
@@ -209,7 +147,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const signUp = async (email: string, password: string, name: string, role: 'teacher' | 'student') => {
+  const signUp = async (email: string, password: string, name: string, role: 'teacher' | 'student' | 'admin') => {
     try {
       // Garantir que as tabelas existem
       await ensureTablesExist();
@@ -233,16 +171,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error('Falha ao criar usuário');
       }
 
-      console.log('Usuário criado. Inserindo dados na tabela users...');
+      console.log('Usuário criado. Inserindo dados nas tabelas...');
       
-      // Adicionar detalhes do usuário na tabela users
-      const { error: profileError } = await supabase.from('users').insert([
+      // Adicionar detalhes do usuário na tabela users (para compatibilidade)
+      const { error: usersError } = await supabase.from('users').insert([
         {
           id: authData.user.id,
           email,
           name,
           role,
           status: 'active',
+        },
+      ]);
+
+      if (usersError) {
+        console.error('Erro ao criar registro na tabela users:', usersError);
+        // Não impede o fluxo - vamos tentar registrar no user_profile
+      }
+      
+      // Adicionar detalhes do usuário na nova tabela user_profile
+      const { error: profileError } = await supabase.from('user_profile').insert([
+        {
+          id: authData.user.id,
+          email,
+          name,
+          role,
         },
       ]);
 

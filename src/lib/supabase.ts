@@ -10,10 +10,10 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 export async function setupSupabaseFunctions() {
   try {
     // Criar função para extensão UUID
-    const createUuidExtResult = await supabase.rpc('create_uuid_extension');
-    if (createUuidExtResult.error && createUuidExtResult.error.message.includes('does not exist')) {
+    const { error: createUuidExtError } = await supabase.rpc('create_uuid_extension');
+    if (createUuidExtError && createUuidExtError.message.includes('does not exist')) {
       console.log('Criando função create_uuid_extension...');
-      const createFuncResult = await supabase.rpc('create_function', {
+      const { error: createFuncError } = await supabase.rpc('create_function', {
         name: 'create_uuid_extension',
         definition: `
           CREATE OR REPLACE FUNCTION create_uuid_extension()
@@ -24,16 +24,16 @@ export async function setupSupabaseFunctions() {
           $$ LANGUAGE plpgsql;
         `
       });
-      if (createFuncResult.error) {
-        console.error('Erro ao criar create_uuid_extension:', createFuncResult.error);
+      if (createFuncError) {
+        console.error('Erro ao criar create_uuid_extension:', createFuncError);
       }
     }
     
     // Criar função para executar SQL
-    const executeSqlResult = await supabase.rpc('execute_sql', { sql_query: 'SELECT 1' });
-    if (executeSqlResult.error && executeSqlResult.error.message.includes('does not exist')) {
+    const { error: executeSqlError } = await supabase.rpc('execute_sql', { sql_query: 'SELECT 1' });
+    if (executeSqlError && executeSqlError.message.includes('does not exist')) {
       console.log('Criando função execute_sql...');
-      const createFuncResult = await supabase.rpc('create_function', {
+      const { error: createFuncError } = await supabase.rpc('create_function', {
         name: 'execute_sql',
         definition: `
           CREATE OR REPLACE FUNCTION execute_sql(sql_query TEXT)
@@ -44,14 +44,14 @@ export async function setupSupabaseFunctions() {
           $$ LANGUAGE plpgsql;
         `
       });
-      if (createFuncResult.error) {
-        console.error('Erro ao criar execute_sql:', createFuncResult.error);
+      if (createFuncError) {
+        console.error('Erro ao criar execute_sql:', createFuncError);
       }
     }
     
     // Criar função para criar função
-    const createFuncResult = await supabase.rpc('create_function', { name: 'test', definition: 'SELECT 1' });
-    if (createFuncResult.error && createFuncResult.error.message.includes('does not exist')) {
+    const { error: createFuncError } = await supabase.rpc('create_function', { name: 'test', definition: 'SELECT 1' });
+    if (createFuncError && createFuncError.message.includes('does not exist')) {
       console.log('Criando função create_function...');
       // Infelizmente não podemos criar esta função através da API,
       // então precisamos instruir o usuário a criá-la manualmente no SQL Editor do Supabase
@@ -67,10 +67,10 @@ export async function setupSupabaseFunctions() {
     }
     
     // Criar função para criar a tabela de usuários
-    const createUsersTableResult = await supabase.rpc('create_users_table');
-    if (createUsersTableResult.error && createUsersTableResult.error.message.includes('does not exist')) {
+    const { error: createUsersTableError } = await supabase.rpc('create_users_table');
+    if (createUsersTableError && createUsersTableError.message.includes('does not exist')) {
       console.log('Criando função create_users_table...');
-      const createFuncResult = await supabase.rpc('create_function', {
+      const { error: createFuncError } = await supabase.rpc('create_function', {
         name: 'create_users_table',
         definition: `
           CREATE OR REPLACE FUNCTION create_users_table()
@@ -80,7 +80,7 @@ export async function setupSupabaseFunctions() {
               id UUID PRIMARY KEY,
               email TEXT UNIQUE NOT NULL,
               name TEXT NOT NULL,
-              role TEXT NOT NULL CHECK (role IN ('teacher', 'student')),
+              role TEXT NOT NULL CHECK (role IN ('teacher', 'student', 'admin')),
               status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'blocked')),
               created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
             );
@@ -88,8 +88,34 @@ export async function setupSupabaseFunctions() {
           $$ LANGUAGE plpgsql;
         `
       });
-      if (createFuncResult.error) {
-        console.error('Erro ao criar create_users_table:', createFuncResult.error);
+      if (createFuncError) {
+        console.error('Erro ao criar create_users_table:', createFuncError);
+      }
+    }
+    
+    // Criar função para criar a tabela de perfil de usuário
+    const { error: createProfileTableError } = await supabase.rpc('create_user_profile_table');
+    if (createProfileTableError && createProfileTableError.message.includes('does not exist')) {
+      console.log('Criando função create_user_profile_table...');
+      const { error: createFuncError } = await supabase.rpc('create_function', {
+        name: 'create_user_profile_table',
+        definition: `
+          CREATE OR REPLACE FUNCTION create_user_profile_table()
+          RETURNS void AS $$
+          BEGIN
+            CREATE TABLE IF NOT EXISTS public.user_profile (
+              id UUID PRIMARY KEY,
+              name TEXT,
+              email TEXT,
+              role TEXT CHECK (role IN ('student', 'teacher', 'admin')) DEFAULT 'student',
+              created_at TIMESTAMP DEFAULT now()
+            );
+          END;
+          $$ LANGUAGE plpgsql;
+        `
+      });
+      if (createFuncError) {
+        console.error('Erro ao criar create_user_profile_table:', createFuncError);
       }
     }
     
@@ -102,13 +128,41 @@ export async function setupSupabaseFunctions() {
 // Chamar a configuração quando o módulo for carregado
 setupSupabaseFunctions();
 
+// Função auxiliar para garantir que as tabelas existem
+export async function ensureTables() {
+  try {
+    // Criar tabela de usuários se não existir
+    await supabase.rpc('create_users_table').then(({ error }) => {
+      if (error && !error.message.includes('does not exist')) {
+        console.error('Erro ao criar tabela de usuários:', error);
+      }
+    });
+    
+    // Criar tabela de perfil de usuário se não existir
+    await supabase.rpc('create_user_profile_table').then(({ error }) => {
+      if (error && !error.message.includes('does not exist')) {
+        console.error('Erro ao criar tabela de perfil de usuário:', error);
+      }
+    });
+  } catch (error) {
+    console.error('Erro ao garantir existência das tabelas:', error);
+  }
+}
+
 export type Tables = {
   users: {
     id: string;
     email: string;
     name: string;
-    role: 'teacher' | 'student';
+    role: 'teacher' | 'student' | 'admin';
     status: 'active' | 'blocked';
+    created_at: string;
+  };
+  user_profile: {
+    id: string;
+    name: string;
+    email: string;
+    role: 'teacher' | 'student' | 'admin';
     created_at: string;
   };
   lessons: {

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 
@@ -12,7 +12,7 @@ export default function RegisterForm() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'teacher' | 'student'>('student');
+  const [role, setRole] = useState<'teacher' | 'student' | 'admin'>('student');
   const [isLoading, setIsLoading] = useState(false);
   const { t } = useLanguage();
   const { signUp } = useAuth();
@@ -76,7 +76,7 @@ export default function RegisterForm() {
             <Label>{t('role')}</Label>
             <RadioGroup 
               defaultValue={role} 
-              onValueChange={(value) => setRole(value as 'teacher' | 'student')}
+              onValueChange={(value) => setRole(value as 'teacher' | 'student' | 'admin')}
               className="flex space-x-4"
             >
               <div className="flex items-center space-x-2">
