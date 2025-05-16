@@ -3,15 +3,16 @@ import React, { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import TeacherSidebar from '@/components/teacher/TeacherSidebar';
 import CreateLessonForm from '@/components/teacher/CreateLessonForm';
+import AssignLessonForm from '@/components/teacher/AssignLessonForm';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Tables } from '@/lib/supabase';
+import { Tables } from '@/integrations/supabase/types';
 import { PlusCircle, Edit, Trash, Users } from 'lucide-react';
 
 type Lesson = Tables['lessons'];
@@ -24,6 +25,8 @@ export default function LessonsPage() {
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [loading, setLoading] = useState(true);
   const [openCreateDialog, setOpenCreateDialog] = useState(false);
+  const [openAssignDialog, setOpenAssignDialog] = useState(false);
+  const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
 
   const loadLessons = async () => {
     if (!user) return;
@@ -57,6 +60,19 @@ export default function LessonsPage() {
   const handleCreateSuccess = () => {
     setOpenCreateDialog(false);
     loadLessons();
+  };
+
+  const handleAssignSuccess = () => {
+    setOpenAssignDialog(false);
+    toast({
+      title: t('success'),
+      description: 'Aula atribuída com sucesso!'
+    });
+  };
+
+  const handleAssignLesson = (lessonId: string) => {
+    setSelectedLessonId(lessonId);
+    setOpenAssignDialog(true);
   };
 
   const handleDeleteLesson = async (lessonId: string) => {
@@ -171,12 +187,7 @@ export default function LessonsPage() {
                               size="sm" 
                               variant="outline"
                               className="flex items-center gap-1 text-brand-blue"
-                              onClick={() => {
-                                toast({
-                                  title: "Funcionalidade em breve",
-                                  description: "A atribuição de aulas estará disponível em breve."
-                                });
-                              }}
+                              onClick={() => handleAssignLesson(lesson.id)}
                             >
                               <Users className="h-3.5 w-3.5" />
                               <span className="sr-only">Atribuir</span>
@@ -199,6 +210,20 @@ export default function LessonsPage() {
               )}
             </CardContent>
           </Card>
+
+          <Dialog open={openAssignDialog} onOpenChange={setOpenAssignDialog}>
+            <DialogContent className="sm:max-w-[600px]">
+              <DialogHeader>
+                <DialogTitle>Atribuir Aula aos Alunos</DialogTitle>
+              </DialogHeader>
+              {selectedLessonId && (
+                <AssignLessonForm 
+                  lessonId={selectedLessonId} 
+                  onSuccess={handleAssignSuccess} 
+                />
+              )}
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
     </MainLayout>
