@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -6,19 +5,22 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { Link } from 'react-router-dom';
 import { Globe, LogOut, User } from 'lucide-react';
+import AccessibilityMenu from './AccessibilityMenu';
 
 export default function Header() {
   const { language, setLanguage, t } = useLanguage();
   const { user, userDetails, signOut } = useAuth();
 
   return (
-    <header className="bg-white shadow-sm py-4">
+    <header className="bg-white shadow-sm py-4 dark:bg-gray-800 dark:border-gray-700">
       <div className="container mx-auto flex items-center justify-between px-4">
         <Link to="/" className="flex items-center space-x-2">
-          <span className="text-xl font-bold text-brand-blue">EngLearn</span>
+          <span className="text-xl font-bold text-brand-blue dark:text-brand-lightBlue">EngLearn</span>
         </Link>
 
         <div className="flex items-center space-x-4">
+          <AccessibilityMenu />
+          
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="icon">
