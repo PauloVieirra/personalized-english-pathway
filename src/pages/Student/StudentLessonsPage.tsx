@@ -11,8 +11,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Tables } from '@/lib/supabase';
 import { CheckCircle, AlertCircle, Star } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import ReactPlayer from 'react-player/lazy';
 
 type StudentLesson = {
   id: string;
@@ -217,67 +218,71 @@ export default function StudentLessonsPage() {
 
           {/* Lesson Detail Dialog */}
           <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
-            <DialogContent className="max-w-3xl">
+            <DialogContent className="max-w-3xl max-h-[90vh]">
               <DialogHeader>
                 <DialogTitle>{selectedLesson?.lesson.title}</DialogTitle>
               </DialogHeader>
               
-              <div className="space-y-6 py-4">
-                {selectedLesson?.lesson.video_url && (
-                  <div className="aspect-video rounded-md overflow-hidden">
-                    <iframe 
-                      width="100%" 
-                      height="100%" 
-                      src={selectedLesson.lesson.video_url} 
-                      title={selectedLesson.lesson.title}
-                      frameBorder="0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                    ></iframe>
+              <ScrollArea className="h-[70vh]">
+                <div className="space-y-6 py-4 px-1">
+                  {selectedLesson?.lesson.video_url && (
+                    <div className="aspect-video rounded-md overflow-hidden mb-6">
+                      <ReactPlayer
+                        url={selectedLesson.lesson.video_url}
+                        width="100%"
+                        height="100%"
+                        controls
+                        config={{
+                          youtube: {
+                            playerVars: { origin: window.location.origin }
+                          }
+                        }}
+                      />
+                    </div>
+                  )}
+                  
+                  <div className="prose prose-sm max-w-none">
+                    {selectedLesson?.lesson.content.split('\n').map((paragraph, idx) => (
+                      <p key={idx}>{paragraph}</p>
+                    ))}
                   </div>
-                )}
-                
-                <div className="prose prose-sm max-w-none">
-                  {selectedLesson?.lesson.content.split('\n').map((paragraph, idx) => (
-                    <p key={idx}>{paragraph}</p>
-                  ))}
-                </div>
-                
-                {selectedLesson?.completed && (
-                  <div className="bg-gray-50 rounded-md p-4">
-                    <h3 className="font-medium mb-2">{t('feedback')}</h3>
-                    {selectedLesson.score !== null && (
-                      <div className="flex items-center mb-2">
-                        <span className="font-medium mr-2">{t('score')}:</span>
-                        <div className="flex items-center text-amber-500">
-                          <span className="text-base font-medium">{selectedLesson.score}/10</span>
+                  
+                  {selectedLesson?.completed && (
+                    <div className="bg-gray-50 rounded-md p-4">
+                      <h3 className="font-medium mb-2">{t('feedback')}</h3>
+                      {selectedLesson.score !== null && (
+                        <div className="flex items-center mb-2">
+                          <span className="font-medium mr-2">{t('score')}:</span>
+                          <div className="flex items-center text-amber-500">
+                            <span className="text-base font-medium">{selectedLesson.score}/10</span>
+                          </div>
                         </div>
-                      </div>
-                    )}
-                    
-                    {selectedLesson.feedback ? (
-                      <p>{selectedLesson.feedback}</p>
-                    ) : (
-                      <p className="text-muted-foreground">Nenhum feedback disponível ainda.</p>
-                    )}
-                  </div>
-                )}
-                
-                {!selectedLesson?.completed && (
-                  <Button 
-                    className="w-full"
-                    onClick={() => {
-                      if (selectedLesson) {
-                        markLessonAsCompleted(selectedLesson.id);
-                        setIsDetailDialogOpen(false);
-                      }
-                    }}
-                  >
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    Marcar como Concluída
-                  </Button>
-                )}
-              </div>
+                      )}
+                      
+                      {selectedLesson.feedback ? (
+                        <p>{selectedLesson.feedback}</p>
+                      ) : (
+                        <p className="text-muted-foreground">Nenhum feedback disponível ainda.</p>
+                      )}
+                    </div>
+                  )}
+                  
+                  {!selectedLesson?.completed && (
+                    <Button 
+                      className="w-full"
+                      onClick={() => {
+                        if (selectedLesson) {
+                          markLessonAsCompleted(selectedLesson.id);
+                          setIsDetailDialogOpen(false);
+                        }
+                      }}
+                    >
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Marcar como Concluída
+                    </Button>
+                  )}
+                </div>
+              </ScrollArea>
             </DialogContent>
           </Dialog>
         </div>
