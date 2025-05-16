@@ -5,7 +5,8 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { Link } from 'react-router-dom';
 import { Globe, LogOut, User } from 'lucide-react';
-import AccessibilityMenu from './AccessibilityMenu';
+import ThemeToggle from './ThemeToggle';
+import FontSizeMenu from './FontSizeMenu';
 
 export default function Header() {
   const { language, setLanguage, t } = useLanguage();
@@ -19,7 +20,8 @@ export default function Header() {
         </Link>
 
         <div className="flex items-center space-x-4">
-          <AccessibilityMenu />
+          <ThemeToggle />
+          <FontSizeMenu />
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
