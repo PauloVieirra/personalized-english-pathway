@@ -4,12 +4,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useLanguage } from '@/context/LanguageContext';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
-import { Tables } from '@/lib/supabase';
 import { Badge } from '@/components/ui/badge';
 
-type Student = Tables['users'] & {
+// Definição do tipo Student
+type Student = {
+  id: string;
+  name: string;
+  email: string;
+  role: 'student' | 'teacher' | 'admin';
+  status: 'active' | 'blocked';
   lesson_count: number;
 };
 
@@ -24,25 +29,36 @@ export default function StudentsList() {
   const loadStudents = async () => {
     setLoading(true);
     try {
-      // Get all students and count their assigned lessons
-      const { data, error } = await supabase
+      // Obter todos os estudantes
+      const { data: usersData, error: usersError } = await supabase
         .from('users')
-        .select('*, student_lessons(count)')
+        .select('*')
         .eq('role', 'student');
 
-      if (error) throw error;
+      if (usersError) throw usersError;
 
-      if (data) {
-        // Transform the data to include lesson count
-        const studentsWithCount = data.map(student => ({
-          ...student,
-          lesson_count: student.student_lessons?.[0]?.count || 0
-        }));
+      if (usersData) {
+        // Para cada estudante, contar suas lições atribuídas
+        const studentsWithCounts = await Promise.all(
+          usersData.map(async (student) => {
+            const { count, error: countError } = await supabase
+              .from('student_lessons')
+              .select('*', { count: 'exact', head: true })
+              .eq('student_id', student.id);
+
+            if (countError) {
+              console.error('Erro ao contar lições:', countError);
+              return { ...student, lesson_count: 0 };
+            }
+
+            return { ...student, lesson_count: count || 0 };
+          })
+        );
         
-        setStudents(studentsWithCount);
+        setStudents(studentsWithCounts);
       }
     } catch (error: any) {
-      console.error('Error loading students:', error.message);
+      console.error('Erro ao carregar estudantes:', error.message);
       toast({
         title: t('error'),
         description: error.message,
@@ -80,7 +96,7 @@ export default function StudentsList() {
         description: `Aluno ${newStatus === 'active' ? 'ativado' : 'bloqueado'} com sucesso.`
       });
     } catch (error: any) {
-      console.error('Error toggling student status:', error.message);
+      console.error('Erro ao alterar status do aluno:', error.message);
       toast({
         title: t('error'),
         description: error.message,
