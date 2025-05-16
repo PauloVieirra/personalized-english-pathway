@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import TeacherSidebar from '@/components/teacher/TeacherSidebar';
@@ -15,7 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tables } from '@/integrations/supabase/types';
 import { PlusCircle, Edit, Trash, Users } from 'lucide-react';
 
-type Lesson = Tables['lessons'];
+type Lesson = Tables<'lessons'>;
 
 export default function LessonsPage() {
   const { t } = useLanguage();
@@ -115,6 +114,7 @@ export default function LessonsPage() {
   };
 
   return (
+    
     <MainLayout requireAuth allowedRoles={['teacher']}>
       <div className="flex min-h-screen">
         <TeacherSidebar />

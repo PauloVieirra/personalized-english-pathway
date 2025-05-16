@@ -176,6 +176,35 @@ const translations = {
     pt: 'Avaliar',
     en: 'Evaluate',
   },
+  // Added missing translations
+  lessonsAssignedSuccessfully: {
+    pt: 'Aulas atribuídas com sucesso',
+    en: 'Lessons assigned successfully',
+  },
+  selectStudentsToAssignLesson: {
+    pt: 'Selecione os alunos para atribuir a aula',
+    en: 'Select students to assign lesson',
+  },
+  noStudentsFound: {
+    pt: 'Nenhum aluno encontrado',
+    en: 'No students found',
+  },
+  unnamed: {
+    pt: 'Sem nome',
+    en: 'Unnamed',
+  },
+  noEmail: {
+    pt: 'Sem email',
+    en: 'No email',
+  },
+  saving: {
+    pt: 'Salvando...',
+    en: 'Saving...',
+  },
+  saveAssignments: {
+    pt: 'Salvar Atribuições',
+    en: 'Save Assignments',
+  },
 };
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
