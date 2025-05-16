@@ -80,7 +80,7 @@ export default function Index() {
       name: 'João Oliveira',
       role: 'Curriculum Director',
       avatar: '/team2.jpg',
-      bio: 'João specializes in creating engaging learning materials that adapt to each student's goals and learning style.'
+      bio: 'João specializes in creating engaging learning materials that adapt to each student.'
     },
     {
       name: 'Luisa Santos',
@@ -525,8 +525,7 @@ export default function Index() {
             <p className="text-gray-400">&copy; {new Date().getFullYear()} Orsheep. Todos os direitos reservados.</p>
             <div className="flex items-center gap-2">
               <span className="text-gray-400">Feito com</span>
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="#e11d48" stroke="#e11d48" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
-              <span className="text-gray-400">no Brasil</span>
+               <span className="text-gray-400">no Brasil</span>
             </div>
           </div>
         </div>
