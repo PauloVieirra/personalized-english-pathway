@@ -8,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { Badge } from '@/components/ui/badge';
 
-// Definição do tipo Student
+// Updated Student type to include status
 type Student = {
   id: string;
   name: string | null;
@@ -51,14 +51,16 @@ export default function StudentsList() {
               return { 
                 ...student, 
                 lesson_count: 0,
-                status: student.status || 'active' as const // Use status if present, or default to active
+                // Explicitly cast to our type to handle both strings and undefined
+                status: (student.status as 'active' | 'blocked' | undefined) || 'active'
               };
             }
 
             return { 
               ...student, 
               lesson_count: count || 0,
-              status: student.status || 'active' as const // Use status if present, or default to active
+              // Explicitly cast to our type to handle both strings and undefined
+              status: (student.status as 'active' | 'blocked' | undefined) || 'active'
             };
           })
         );
