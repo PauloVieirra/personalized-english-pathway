@@ -51,14 +51,14 @@ export default function StudentsList() {
               return { 
                 ...student, 
                 lesson_count: 0,
-                status: 'active' as const // Default status if not present
+                status: student.status || 'active' as const // Use status if present, or default to active
               };
             }
 
             return { 
               ...student, 
               lesson_count: count || 0,
-              status: 'active' as const // Default status if not present
+              status: student.status || 'active' as const // Use status if present, or default to active
             };
           })
         );
@@ -85,7 +85,7 @@ export default function StudentsList() {
     const newStatus = currentStatus === 'active' ? 'blocked' : 'active';
     
     try {
-      // Update the status in user_profile instead of users
+      // Update the status in user_profile table
       const { error } = await supabase
         .from('user_profile')
         .update({ status: newStatus })
