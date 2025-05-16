@@ -11,9 +11,9 @@ import { Badge } from '@/components/ui/badge';
 // Definição do tipo Student
 type Student = {
   id: string;
-  name: string;
-  email: string;
-  role: 'student' | 'teacher' | 'admin';
+  name: string | null;
+  email: string | null;
+  role: string | null;
   status: 'active' | 'blocked';
   lesson_count: number;
 };
@@ -29,18 +29,18 @@ export default function StudentsList() {
   const loadStudents = async () => {
     setLoading(true);
     try {
-      // Obter todos os estudantes
-      const { data: usersData, error: usersError } = await supabase
-        .from('users')
+      // Obter todos os estudantes do user_profile
+      const { data: profileData, error: profileError } = await supabase
+        .from('user_profile')
         .select('*')
         .eq('role', 'student');
 
-      if (usersError) throw usersError;
+      if (profileError) throw profileError;
 
-      if (usersData) {
+      if (profileData) {
         // Para cada estudante, contar suas lições atribuídas
         const studentsWithCounts = await Promise.all(
-          usersData.map(async (student) => {
+          profileData.map(async (student) => {
             const { count, error: countError } = await supabase
               .from('student_lessons')
               .select('*', { count: 'exact', head: true })
@@ -48,10 +48,18 @@ export default function StudentsList() {
 
             if (countError) {
               console.error('Erro ao contar lições:', countError);
-              return { ...student, lesson_count: 0 };
+              return { 
+                ...student, 
+                lesson_count: 0,
+                status: 'active' as const // Default status if not present
+              };
             }
 
-            return { ...student, lesson_count: count || 0 };
+            return { 
+              ...student, 
+              lesson_count: count || 0,
+              status: 'active' as const // Default status if not present
+            };
           })
         );
         
@@ -77,8 +85,9 @@ export default function StudentsList() {
     const newStatus = currentStatus === 'active' ? 'blocked' : 'active';
     
     try {
+      // Update the status in user_profile instead of users
       const { error } = await supabase
-        .from('users')
+        .from('user_profile')
         .update({ status: newStatus })
         .eq('id', studentId);
 
@@ -106,8 +115,8 @@ export default function StudentsList() {
   };
 
   const filteredStudents = students.filter(student =>
-    student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    student.email.toLowerCase().includes(searchTerm.toLowerCase())
+    (student.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+    (student.email?.toLowerCase() || '').includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -148,8 +157,8 @@ export default function StudentsList() {
             ) : (
               filteredStudents.map(student => (
                 <TableRow key={student.id}>
-                  <TableCell>{student.name}</TableCell>
-                  <TableCell>{student.email}</TableCell>
+                  <TableCell>{student.name || 'Sem nome'}</TableCell>
+                  <TableCell>{student.email || 'Sem email'}</TableCell>
                   <TableCell>
                     <Badge 
                       variant={student.status === 'active' ? 'default' : 'destructive'}

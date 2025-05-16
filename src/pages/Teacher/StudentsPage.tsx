@@ -8,13 +8,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { PlusCircle } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/components/ui/use-toast';
 
 export default function StudentsPage() {
   const { t } = useLanguage();
   const [openDialog, setOpenDialog] = useState(false);
-  const { toast } = useToast();
 
   return (
     <MainLayout requireAuth allowedRoles={['teacher']}>
