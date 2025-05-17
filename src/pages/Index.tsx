@@ -23,22 +23,22 @@ const Index = () => {
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center">
             <h1 className="text-4xl md:text-5xl font-bold mb-6 animate-fade-in">
-              {t('welcomeHeading', 'Learn English Effectively')}
+              {t('welcomeHeading')}
             </h1>
             <p className="text-xl mb-8 opacity-90">
-              {t('welcomeSubheading', 'Master a new language with our interactive platform designed for students of all levels')}
+              {t('welcomeSubheading')}
             </p>
             
             {!user && (
               <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
                 <Link to="/register">
                   <Button size="lg" className="w-full sm:w-auto">
-                    {t('getStarted', 'Get Started')}
+                    {t('getStarted')}
                   </Button>
                 </Link>
                 <Link to="/login">
                   <Button variant="outline" size="lg" className="w-full sm:w-auto bg-white/10 hover:bg-white/20">
-                    {t('login', 'Login')}
+                    {t('login')}
                   </Button>
                 </Link>
               </div>
@@ -51,7 +51,7 @@ const Index = () => {
       <section className="py-16 bg-white dark:bg-gray-900">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-12">
-            {t('exploreCities', 'Explore English-Speaking Destinations')}
+            {t('exploreCities')}
           </h2>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -65,12 +65,12 @@ const Index = () => {
                 />
               </div>
               <CardHeader>
-                <CardTitle>{t('london', 'London')}</CardTitle>
-                <CardDescription>{t('londonDescription', 'Iconic landmarks and rich history')}</CardDescription>
+                <CardTitle>{t('london')}</CardTitle>
+                <CardDescription>{t('londonDescription')}</CardDescription>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {t('londonText', 'Experience the birthplace of English and immerse yourself in the culture of this global city.')}
+                  {t('londonText')}
                 </p>
               </CardContent>
             </Card>
@@ -85,12 +85,12 @@ const Index = () => {
                 />
               </div>
               <CardHeader>
-                <CardTitle>{t('newYork', 'New York')}</CardTitle>
-                <CardDescription>{t('newYorkDescription', 'The city that never sleeps')}</CardDescription>
+                <CardTitle>{t('newYork')}</CardTitle>
+                <CardDescription>{t('newYorkDescription')}</CardDescription>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {t('newYorkText', 'Discover American English in the heart of one of the world\'s most diverse and exciting cities.')}
+                  {t('newYorkText')}
                 </p>
               </CardContent>
             </Card>
@@ -105,12 +105,12 @@ const Index = () => {
                 />
               </div>
               <CardHeader>
-                <CardTitle>{t('sydney', 'Sydney')}</CardTitle>
-                <CardDescription>{t('sydneyDescription', 'Sun, surf and Australian English')}</CardDescription>
+                <CardTitle>{t('sydney')}</CardTitle>
+                <CardDescription>{t('sydneyDescription')}</CardDescription>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {t('sydneyText', 'Learn English with an Australian twist while enjoying the beautiful beaches and vibrant culture.')}
+                  {t('sydneyText')}
                 </p>
               </CardContent>
             </Card>
@@ -122,10 +122,10 @@ const Index = () => {
       <section className="py-16 bg-gray-50 dark:bg-gray-800">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-4">
-            {t('whyChooseUs', 'Why Choose Our Platform')}
+            {t('whyChooseUs')}
           </h2>
           <p className="text-center mb-12 max-w-2xl mx-auto text-gray-600 dark:text-gray-300">
-            {t('platformDescription', 'Our innovative approach to language learning combines technology with proven teaching methods')}
+            {t('platformDescription')}
           </p>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -134,12 +134,12 @@ const Index = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Users className="h-5 w-5 text-brand-blue" />
-                  {t('expertTeachers', 'Expert Teachers')}
+                  {t('expertTeachers')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-gray-600 dark:text-gray-400">
-                  {t('teachersDescription', 'Learn from qualified language instructors with years of experience teaching English to international students.')}
+                  {t('teachersDescription')}
                 </p>
               </CardContent>
             </Card>
@@ -149,12 +149,12 @@ const Index = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <MessageSquare className="h-5 w-5 text-brand-green" />
-                  {t('interactiveLessons', 'Interactive Lessons')}
+                  {t('interactiveLessons')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-gray-600 dark:text-gray-400">
-                  {t('lessonsDescription', 'Engage with dynamic content designed to improve your reading, writing, speaking, and listening skills.')}
+                  {t('lessonsDescription')}
                 </p>
               </CardContent>
             </Card>
@@ -164,12 +164,12 @@ const Index = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Mail className="h-5 w-5 text-brand-blue" />
-                  {t('personalizedFeedback', 'Personalized Feedback')}
+                  {t('personalizedFeedback')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-gray-600 dark:text-gray-400">
-                  {t('feedbackDescription', 'Receive detailed assessments and guidance tailored to your individual learning needs and goals.')}
+                  {t('feedbackDescription')}
                 </p>
               </CardContent>
             </Card>
@@ -182,19 +182,19 @@ const Index = () => {
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
             <h2 className="text-3xl font-bold text-center mb-8">
-              {t('aboutUs', 'About Us')}
+              {t('aboutUs')}
             </h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
               <div>
                 <p className="mb-4 text-gray-700 dark:text-gray-300">
-                  {t('aboutUsDescription', 'EngLearn was founded in 2020 by a team of passionate language educators who believed that learning English should be accessible, engaging, and effective for everyone.')}
+                  {t('aboutUsDescription')}
                 </p>
                 <p className="mb-4 text-gray-700 dark:text-gray-300">
-                  {t('aboutUsMission', 'Our mission is to break down language barriers and open doors to new opportunities for our students through innovative teaching methods and technology.')}
+                  {t('aboutUsMission')}
                 </p>
                 <p className="text-gray-700 dark:text-gray-300">
-                  {t('aboutUsVision', 'We envision a world where language is no longer a barrier to education, career advancement, and cross-cultural understanding.')}
+                  {t('aboutUsVision')}
                 </p>
               </div>
               
@@ -224,7 +224,7 @@ const Index = () => {
       <section className="py-16 bg-gray-50 dark:bg-gray-800">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-12">
-            {t('testimonials', 'What Our Students Say')}
+            {t('testimonials')}
           </h2>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -239,7 +239,7 @@ const Index = () => {
                   </div>
                 </div>
                 <p className="text-gray-600 dark:text-gray-300 italic mb-4">
-                  "{t('testimonial1', 'The interactive lessons and supportive teachers helped me improve my English dramatically. I\'m now confident speaking in business meetings.')}"
+                  "{t('testimonial1')}"
                 </p>
                 <div className="flex items-center">
                   <Avatar className="h-10 w-10 mr-3">
@@ -248,7 +248,7 @@ const Index = () => {
                   </Avatar>
                   <div>
                     <p className="font-medium">Juan Diaz</p>
-                    <p className="text-sm text-gray-500">{t('studentFrom', 'Student from')} {t('mexico', 'Mexico')}</p>
+                    <p className="text-sm text-gray-500">{t('studentFrom')} {t('mexico')}</p>
                   </div>
                 </div>
               </CardContent>
@@ -265,7 +265,7 @@ const Index = () => {
                   </div>
                 </div>
                 <p className="text-gray-600 dark:text-gray-300 italic mb-4">
-                  "{t('testimonial2', 'I tried many English courses before, but this is the only one that kept me engaged and motivated throughout my learning journey.')}"
+                  "{t('testimonial2')}"
                 </p>
                 <div className="flex items-center">
                   <Avatar className="h-10 w-10 mr-3">
@@ -274,7 +274,7 @@ const Index = () => {
                   </Avatar>
                   <div>
                     <p className="font-medium">Hiroshi Sato</p>
-                    <p className="text-sm text-gray-500">{t('studentFrom', 'Student from')} {t('japan', 'Japan')}</p>
+                    <p className="text-sm text-gray-500">{t('studentFrom')} {t('japan')}</p>
                   </div>
                 </div>
               </CardContent>
@@ -291,7 +291,7 @@ const Index = () => {
                   </div>
                 </div>
                 <p className="text-gray-600 dark:text-gray-300 italic mb-4">
-                  "{t('testimonial3', 'The personalized feedback I received helped me focus on my weak areas. Within six months, I passed my English proficiency exam!')}"
+                  "{t('testimonial3')}"
                 </p>
                 <div className="flex items-center">
                   <Avatar className="h-10 w-10 mr-3">
@@ -300,7 +300,7 @@ const Index = () => {
                   </Avatar>
                   <div>
                     <p className="font-medium">Ana Petrovic</p>
-                    <p className="text-sm text-gray-500">{t('studentFrom', 'Student from')} {t('serbia', 'Serbia')}</p>
+                    <p className="text-sm text-gray-500">{t('studentFrom')} {t('serbia')}</p>
                   </div>
                 </div>
               </CardContent>
@@ -313,7 +313,7 @@ const Index = () => {
       <section className="py-16 bg-white dark:bg-gray-900">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-8">
-            {t('recentComments', 'Recent Student Comments')}
+            {t('recentComments')}
           </h2>
           
           <Card className="max-w-3xl mx-auto">
@@ -328,11 +328,11 @@ const Index = () => {
                       </Avatar>
                       <div>
                         <p className="font-medium">Miguel Sanchez</p>
-                        <p className="text-xs text-gray-500">2 {t('daysAgo', 'days ago')}</p>
+                        <p className="text-xs text-gray-500">2 {t('daysAgo')}</p>
                       </div>
                     </div>
                     <p className="text-sm text-gray-600 dark:text-gray-300">
-                      {t('comment1', 'Today\'s pronunciation lesson was extremely helpful. The teacher took time to correct my mistakes individually.')}
+                      {t('comment1')}
                     </p>
                   </div>
                   <Separator />
@@ -345,11 +345,11 @@ const Index = () => {
                       </Avatar>
                       <div>
                         <p className="font-medium">Lina Kim</p>
-                        <p className="text-xs text-gray-500">3 {t('daysAgo', 'days ago')}</p>
+                        <p className="text-xs text-gray-500">3 {t('daysAgo')}</p>
                       </div>
                     </div>
                     <p className="text-sm text-gray-600 dark:text-gray-300">
-                      {t('comment2', 'I love the interactive exercises! They make learning grammar so much more engaging than traditional methods.')}
+                      {t('comment2')}
                     </p>
                   </div>
                   <Separator />
@@ -362,11 +362,11 @@ const Index = () => {
                       </Avatar>
                       <div>
                         <p className="font-medium">Ravi Patel</p>
-                        <p className="text-xs text-gray-500">5 {t('daysAgo', 'days ago')}</p>
+                        <p className="text-xs text-gray-500">5 {t('daysAgo')}</p>
                       </div>
                     </div>
                     <p className="text-sm text-gray-600 dark:text-gray-300">
-                      {t('comment3', 'The business English module has been incredibly practical. I\'m already using the phrases I learned in my work emails.')}
+                      {t('comment3')}
                     </p>
                   </div>
                   <Separator />
@@ -379,11 +379,11 @@ const Index = () => {
                       </Avatar>
                       <div>
                         <p className="font-medium">Elena Popescu</p>
-                        <p className="text-xs text-gray-500">1 {t('weekAgo', 'week ago')}</p>
+                        <p className="text-xs text-gray-500">1 {t('weekAgo')}</p>
                       </div>
                     </div>
                     <p className="text-sm text-gray-600 dark:text-gray-300">
-                      {t('comment4', 'I appreciate how quickly the teachers respond to questions in the forum. It makes self-study much easier.')}
+                      {t('comment4')}
                     </p>
                   </div>
                 </div>
@@ -398,15 +398,15 @@ const Index = () => {
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
             <h2 className="text-3xl font-bold text-center mb-8">
-              {t('contactUs', 'Contact Us')}
+              {t('contactUs')}
             </h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <Card>
                 <CardHeader>
-                  <CardTitle>{t('getInTouch', 'Get in Touch')}</CardTitle>
+                  <CardTitle>{t('getInTouch')}</CardTitle>
                   <CardDescription>
-                    {t('contactDescription', 'Have questions about our courses? We\'re here to help.')}
+                    {t('contactDescription')}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -416,38 +416,38 @@ const Index = () => {
                   </div>
                   <div className="flex items-center">
                     <Users className="h-5 w-5 mr-2 text-brand-blue" />
-                    <span>{t('scheduleDemo', 'Schedule a Free Demo Class')}</span>
+                    <span>{t('scheduleDemo')}</span>
                   </div>
                 </CardContent>
                 <CardFooter>
                   <Button className="w-full">
-                    {t('sendMessage', 'Send Us a Message')}
+                    {t('sendMessage')}
                   </Button>
                 </CardFooter>
               </Card>
               
               <div>
                 <Alert className="mb-4">
-                  <AlertTitle>{t('officeHours', 'Office Hours')}</AlertTitle>
+                  <AlertTitle>{t('officeHours')}</AlertTitle>
                   <AlertDescription>
-                    {t('officeHoursDescription', 'Monday to Friday: 9am - 6pm (GMT)')}
+                    {t('officeHoursDescription')}
                   </AlertDescription>
                 </Alert>
                 
                 <Alert className="mb-4">
-                  <AlertTitle>{t('faq', 'Frequently Asked Questions')}</AlertTitle>
+                  <AlertTitle>{t('faq')}</AlertTitle>
                   <AlertDescription>
                     <Link to="#" className="flex items-center text-brand-blue hover:underline">
-                      {t('viewFaq', 'View our FAQ section')}
+                      {t('viewFaq')}
                       <ChevronRight className="h-4 w-4 ml-1" />
                     </Link>
                   </AlertDescription>
                 </Alert>
                 
                 <Alert>
-                  <AlertTitle>{t('support', 'Student Support')}</AlertTitle>
+                  <AlertTitle>{t('support')}</AlertTitle>
                   <AlertDescription>
-                    {t('supportDescription', 'Registered students can access additional support through their dashboard.')}
+                    {t('supportDescription')}
                   </AlertDescription>
                 </Alert>
               </div>
@@ -463,43 +463,43 @@ const Index = () => {
             <div>
               <h3 className="font-bold text-lg mb-4">EngLearn</h3>
               <p className="text-sm text-gray-300">
-                {t('footerDescription', 'Transforming language learning through technology and expert teaching since 2020.')}
+                {t('footerDescription')}
               </p>
             </div>
             
             <div>
-              <h4 className="font-bold mb-4">{t('courses', 'Courses')}</h4>
+              <h4 className="font-bold mb-4">{t('courses')}</h4>
               <ul className="space-y-2 text-sm text-gray-300">
-                <li><Link to="#" className="hover:text-white">{t('beginnerCourses', 'Beginner Courses')}</Link></li>
-                <li><Link to="#" className="hover:text-white">{t('intermediateCourses', 'Intermediate Courses')}</Link></li>
-                <li><Link to="#" className="hover:text-white">{t('advancedCourses', 'Advanced Courses')}</Link></li>
-                <li><Link to="#" className="hover:text-white">{t('businessEnglish', 'Business English')}</Link></li>
+                <li><Link to="#" className="hover:text-white">{t('beginnerCourses')}</Link></li>
+                <li><Link to="#" className="hover:text-white">{t('intermediateCourses')}</Link></li>
+                <li><Link to="#" className="hover:text-white">{t('advancedCourses')}</Link></li>
+                <li><Link to="#" className="hover:text-white">{t('businessEnglish')}</Link></li>
               </ul>
             </div>
             
             <div>
-              <h4 className="font-bold mb-4">{t('company', 'Company')}</h4>
+              <h4 className="font-bold mb-4">{t('company')}</h4>
               <ul className="space-y-2 text-sm text-gray-300">
-                <li><Link to="#" className="hover:text-white">{t('aboutUs', 'About Us')}</Link></li>
-                <li><Link to="#" className="hover:text-white">{t('careers', 'Careers')}</Link></li>
-                <li><Link to="#" className="hover:text-white">{t('blog', 'Blog')}</Link></li>
-                <li><Link to="#" className="hover:text-white">{t('pressKit', 'Press Kit')}</Link></li>
+                <li><Link to="#" className="hover:text-white">{t('aboutUs')}</Link></li>
+                <li><Link to="#" className="hover:text-white">{t('careers')}</Link></li>
+                <li><Link to="#" className="hover:text-white">{t('blog')}</Link></li>
+                <li><Link to="#" className="hover:text-white">{t('pressKit')}</Link></li>
               </ul>
             </div>
             
             <div>
-              <h4 className="font-bold mb-4">{t('legal', 'Legal')}</h4>
+              <h4 className="font-bold mb-4">{t('legal')}</h4>
               <ul className="space-y-2 text-sm text-gray-300">
-                <li><Link to="#" className="hover:text-white">{t('termsOfService', 'Terms of Service')}</Link></li>
-                <li><Link to="#" className="hover:text-white">{t('privacyPolicy', 'Privacy Policy')}</Link></li>
-                <li><Link to="#" className="hover:text-white">{t('cookies', 'Cookies')}</Link></li>
-                <li><Link to="#" className="hover:text-white">{t('accessibility', 'Accessibility')}</Link></li>
+                <li><Link to="#" className="hover:text-white">{t('termsOfService')}</Link></li>
+                <li><Link to="#" className="hover:text-white">{t('privacyPolicy')}</Link></li>
+                <li><Link to="#" className="hover:text-white">{t('cookies')}</Link></li>
+                <li><Link to="#" className="hover:text-white">{t('accessibility')}</Link></li>
               </ul>
             </div>
           </div>
           
           <div className="pt-8 border-t border-gray-800 text-center text-sm text-gray-400">
-            <p>© 2025 EngLearn. {t('allRightsReserved', 'All rights reserved.')}</p>
+            <p>© 2025 EngLearn. {t('allRightsReserved')}</p>
           </div>
         </div>
       </footer>
