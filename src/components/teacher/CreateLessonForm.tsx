@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,20 +7,62 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/use-toast';
+import { Plus } from 'lucide-react';
+import QuestionForm, { Question } from './QuestionForm';
 
 export default function CreateLessonForm({ onSuccess }: { onSuccess?: () => void }) {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [currentStep, setCurrentStep] = useState<'content' | 'questions'>('content');
   
   const { t } = useLanguage();
   const { user } = useAuth();
   const { toast } = useToast();
 
+  const addQuestion = () => {
+    const newQuestion: Question = {
+      id: `question-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      text: '',
+      weight: 1,
+      type: 'single',
+      options: []
+    };
+    
+    setQuestions([...questions, newQuestion]);
+  };
+
+  const updateQuestion = (updatedQuestion: Question) => {
+    setQuestions(
+      questions.map(q => q.id === updatedQuestion.id ? updatedQuestion : q)
+    );
+  };
+
+  const removeQuestion = (questionId: string) => {
+    setQuestions(questions.filter(q => q.id !== questionId));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Only validate required fields for content step
+    if (currentStep === 'content') {
+      if (!title.trim() || !content.trim()) {
+        toast({
+          title: t('error'),
+          description: t('pleaseFillAllRequiredFields'),
+          variant: 'destructive',
+        });
+        return;
+      }
+      
+      setCurrentStep('questions');
+      return;
+    }
+    
+    // Otherwise, we're submitting the full form with questions
     if (!user) {
       toast({
         title: t('error'),
@@ -29,6 +70,44 @@ export default function CreateLessonForm({ onSuccess }: { onSuccess?: () => void
         variant: 'destructive',
       });
       return;
+    }
+
+    // Validate questions if there are any
+    if (questions.length > 0) {
+      // Check for empty questions
+      const hasEmptyQuestion = questions.some(q => !q.text.trim());
+      if (hasEmptyQuestion) {
+        toast({
+          title: t('error'),
+          description: t('allQuestionsNeedText'),
+          variant: 'destructive',
+        });
+        return;
+      }
+      
+      // Check for questions without options
+      const hasQuestionWithoutOptions = questions.some(q => q.options.length === 0);
+      if (hasQuestionWithoutOptions) {
+        toast({
+          title: t('error'),
+          description: t('allQuestionsNeedOptions'),
+          variant: 'destructive',
+        });
+        return;
+      }
+      
+      // Check for questions without correct answers
+      const hasQuestionWithoutCorrect = questions.some(q => 
+        !q.options.some(opt => opt.isCorrect)
+      );
+      if (hasQuestionWithoutCorrect) {
+        toast({
+          title: t('error'),
+          description: t('allQuestionsNeedCorrectAnswer'),
+          variant: 'destructive',
+        });
+        return;
+      }
     }
 
     setIsLoading(true);
@@ -41,6 +120,7 @@ export default function CreateLessonForm({ onSuccess }: { onSuccess?: () => void
             content,
             video_url: videoUrl || null,
             teacher_id: user.id,
+            questions: questions.length > 0 ? questions : null
           },
         ])
         .select();
@@ -58,6 +138,8 @@ export default function CreateLessonForm({ onSuccess }: { onSuccess?: () => void
       setTitle('');
       setContent('');
       setVideoUrl('');
+      setQuestions([]);
+      setCurrentStep('content');
       
       // Trigger success callback
       if (onSuccess) {
@@ -77,46 +159,109 @@ export default function CreateLessonForm({ onSuccess }: { onSuccess?: () => void
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="title">{t('title')}</Label>
-        <Input
-          id="title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          required
-          className="form-input"
-        />
-      </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="content">{t('content')}</Label>
-        <Textarea
-          id="content"
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          required
-          className="form-input min-h-[200px]"
-        />
-      </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="videoUrl">{t('videoUrl')}</Label>
-        <Input
-          id="videoUrl"
-          value={videoUrl}
-          onChange={(e) => setVideoUrl(e.target.value)}
-          placeholder="https://youtube.com/..."
-          className="form-input"
-        />
-      </div>
-      
-      <Button 
-        type="submit" 
-        className="btn-primary" 
-        disabled={isLoading}
-      >
-        {isLoading ? t('loading') : t('save')}
-      </Button>
+      {currentStep === 'content' ? (
+        <>
+          <div className="space-y-2">
+            <Label htmlFor="title">{t('title')} <span className="text-red-500">*</span></Label>
+            <Input
+              id="title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              required
+              className="form-input"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="content">{t('content')} <span className="text-red-500">*</span></Label>
+            <Textarea
+              id="content"
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              required
+              className="form-input min-h-[200px]"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="videoUrl">{t('videoUrl')}</Label>
+            <Input
+              id="videoUrl"
+              value={videoUrl}
+              onChange={(e) => setVideoUrl(e.target.value)}
+              placeholder="https://youtube.com/..."
+              className="form-input"
+            />
+          </div>
+          
+          <Button 
+            type="submit" 
+            className="w-full" 
+            disabled={isLoading}
+          >
+            {t('continue')}
+          </Button>
+        </>
+      ) : (
+        <>
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-semibold">{t('addQuestions')}</h2>
+            <Button 
+              type="button" 
+              onClick={() => setCurrentStep('content')}
+              variant="outline"
+            >
+              {t('backToContent')}
+            </Button>
+          </div>
+          
+          {questions.length > 0 ? (
+            <div className="space-y-4">
+              {questions.map((question, index) => (
+                <QuestionForm
+                  key={question.id}
+                  questionNumber={index + 1}
+                  question={question}
+                  onUpdate={updateQuestion}
+                  onRemove={() => removeQuestion(question.id)}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 border border-dashed border-gray-300 rounded-lg">
+              <p className="text-gray-500 mb-4">{t('noQuestionsYet')}</p>
+              <Button 
+                type="button" 
+                onClick={addQuestion}
+                variant="outline"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                {t('addQuestion')}
+              </Button>
+            </div>
+          )}
+          
+          <div className="flex flex-col sm:flex-row gap-3 pt-4">
+            <Button 
+              type="button"
+              onClick={addQuestion}
+              variant="outline"
+              className="flex-1 justify-center"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              {t('addQuestion')}
+            </Button>
+            
+            <Button 
+              type="submit"
+              className="flex-1"
+              disabled={isLoading}
+            >
+              {isLoading ? t('loading') : t('save')}
+            </Button>
+          </div>
+        </>
+      )}
     </form>
   );
 }

@@ -1,232 +1,182 @@
 
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-type Language = 'pt' | 'en';
+interface LanguageContextType {
+  language: string;
+  setLanguage: (lang: string) => void;
+  t: (key: string) => string;
+}
 
-type LanguageContextType = {
-  language: Language;
-  setLanguage: (lang: Language) => void;
-  t: (key: keyof typeof translations) => string;
-};
+const LanguageContext = createContext<LanguageContextType>({
+  language: 'pt',
+  setLanguage: () => {},
+  t: (key) => key,
+});
 
-const translations = {
-  // Auth
-  login: {
-    pt: 'Entrar',
-    en: 'Login',
+// Translation strings
+const translations: Record<string, Record<string, string>> = {
+  pt: {
+    active: 'Ativo',
+    blocked: 'Bloqueado',
+    students: 'Alunos',
+    loading: 'Carregando...',
+    progress: 'Progresso',
+    title: 'Título',
+    role: 'Papel',
+    content: 'Conteúdo',
+    name: 'Nome',
+    login: 'Entrar',
+    register: 'Registrar',
+    email: 'E-mail',
+    password: 'Senha',
+    teacher: 'Professor',
+    student: 'Aluno',
+    submit: 'Enviar',
+    save: 'Salvar',
+    dashboard: 'Painel',
+    lessons: 'Aulas',
+    logout: 'Sair',
+    error: 'Erro',
+    success: 'Sucesso',
+    videoUrl: 'URL do vídeo',
+    createLesson: 'Criar aula',
+    yourProgress: 'Seu progresso',
+    completed: 'Concluído',
+    viewLesson: 'Ver aula',
+    assignments: 'Tarefas',
+    evaluate: 'Avaliar',
+    continue: 'Continuar',
+    
+    // New translations for questions
+    addQuestions: 'Adicionar Questões',
+    question: 'Questão',
+    questionText: 'Pergunta',
+    questionWeight: 'Peso da Questão',
+    questionType: 'Tipo de Questão',
+    singleAnswer: 'Resposta Única',
+    multipleAnswers: 'Múltiplas Respostas',
+    answerOptions: 'Opções de Resposta',
+    addOption: 'Adicionar opção',
+    option: 'Opção',
+    correctAnswers: 'Resposta(s) Correta(s)',
+    remove: 'Remover',
+    removeOption: 'Remover opção',
+    backToContent: 'Voltar ao Conteúdo',
+    noQuestionsYet: 'Nenhuma questão adicionada ainda',
+    addQuestion: 'Adicionar Questão',
+    noOptionsAdded: 'Nenhuma opção adicionada',
+    enterQuestionText: 'Digite aqui o enunciado da pergunta',
+    pleaseFillAllRequiredFields: 'Por favor, preencha todos os campos obrigatórios',
+    allQuestionsNeedText: 'Todas as questões precisam ter um enunciado',
+    allQuestionsNeedOptions: 'Todas as questões precisam ter pelo menos uma opção de resposta',
+    allQuestionsNeedCorrectAnswer: 'Todas as questões precisam ter pelo menos uma resposta correta',
+    
+    // Fix for errors in AssignLessonForm.tsx
+    lessonsAssignedSuccessfully: 'Aulas atribuídas com sucesso',
+    selectStudentsToAssignLesson: 'Selecione os alunos para atribuir esta aula',
+    noStudentsFound: 'Nenhum aluno encontrado',
+    unnamed: 'Sem nome',
+    noEmail: 'Sem e-mail',
+    saving: 'Salvando...',
+    saveAssignments: 'Salvar Atribuições'
   },
-  register: {
-    pt: 'Registrar',
-    en: 'Register',
-  },
-  email: {
-    pt: 'Email',
-    en: 'Email',
-  },
-  password: {
-    pt: 'Senha',
-    en: 'Password',
-  },
-  name: {
-    pt: 'Nome',
-    en: 'Name',
-  },
-  role: {
-    pt: 'Função',
-    en: 'Role',
-  },
-  teacher: {
-    pt: 'Professor',
-    en: 'Teacher',
-  },
-  student: {
-    pt: 'Aluno',
-    en: 'Student',
-  },
-  submit: {
-    pt: 'Enviar',
-    en: 'Submit',
-  },
-  // Dashboard
-  welcome: {
-    pt: 'Bem-vindo',
-    en: 'Welcome',
-  },
-  dashboard: {
-    pt: 'Painel',
-    en: 'Dashboard',
-  },
-  lessons: {
-    pt: 'Aulas',
-    en: 'Lessons',
-  },
-  students: {
-    pt: 'Alunos',
-    en: 'Students',
-  },
-  createLesson: {
-    pt: 'Criar Aula',
-    en: 'Create Lesson',
-  },
-  title: {
-    pt: 'Título',
-    en: 'Title',
-  },
-  content: {
-    pt: 'Conteúdo',
-    en: 'Content',
-  },
-  videoUrl: {
-    pt: 'URL do Vídeo',
-    en: 'Video URL',
-  },
-  save: {
-    pt: 'Salvar',
-    en: 'Save',
-  },
-  logout: {
-    pt: 'Sair',
-    en: 'Logout',
-  },
-  // General
-  loading: {
-    pt: 'Carregando...',
-    en: 'Loading...',
-  },
-  error: {
-    pt: 'Erro',
-    en: 'Error',
-  },
-  success: {
-    pt: 'Sucesso',
-    en: 'Success',
-  },
-  // Student
-  myLessons: {
-    pt: 'Minhas Aulas',
-    en: 'My Lessons',
-  },
-  progress: {
-    pt: 'Progresso',
-    en: 'Progress',
-  },
-  completed: {
-    pt: 'Concluído',
-    en: 'Completed',
-  },
-  pending: {
-    pt: 'Pendente',
-    en: 'Pending',
-  },
-  score: {
-    pt: 'Nota',
-    en: 'Score',
-  },
-  feedback: {
-    pt: 'Feedback',
-    en: 'Feedback',
-  },
-  // Teacher - Students management
-  addStudent: {
-    pt: 'Adicionar Aluno',
-    en: 'Add Student',
-  },
-  status: {
-    pt: 'Status',
-    en: 'Status',
-  },
-  active: {
-    pt: 'Ativo',
-    en: 'Active',
-  },
-  blocked: {
-    pt: 'Bloqueado',
-    en: 'Blocked',
-  },
-  block: {
-    pt: 'Bloquear',
-    en: 'Block',
-  },
-  unblock: {
-    pt: 'Desbloquear',
-    en: 'Unblock',
-  },
-  assignLesson: {
-    pt: 'Atribuir Aula',
-    en: 'Assign Lesson',
-  },
-  // Teacher - Lesson management
-  editLesson: {
-    pt: 'Editar Aula',
-    en: 'Edit Lesson',
-  },
-  deleteLesson: {
-    pt: 'Excluir Aula',
-    en: 'Delete Lesson',
-  },
-  selectStudents: {
-    pt: 'Selecionar Alunos',
-    en: 'Select Students',
-  },
-  assign: {
-    pt: 'Atribuir',
-    en: 'Assign',
-  },
-  evaluate: {
-    pt: 'Avaliar',
-    en: 'Evaluate',
-  },
-  // Added missing translations
-  lessonsAssignedSuccessfully: {
-    pt: 'Aulas atribuídas com sucesso',
-    en: 'Lessons assigned successfully',
-  },
-  selectStudentsToAssignLesson: {
-    pt: 'Selecione os alunos para atribuir a aula',
-    en: 'Select students to assign lesson',
-  },
-  noStudentsFound: {
-    pt: 'Nenhum aluno encontrado',
-    en: 'No students found',
-  },
-  unnamed: {
-    pt: 'Sem nome',
-    en: 'Unnamed',
-  },
-  noEmail: {
-    pt: 'Sem email',
-    en: 'No email',
-  },
-  saving: {
-    pt: 'Salvando...',
-    en: 'Saving...',
-  },
-  saveAssignments: {
-    pt: 'Salvar Atribuições',
-    en: 'Save Assignments',
+  en: {
+    active: 'Active',
+    blocked: 'Blocked',
+    students: 'Students',
+    loading: 'Loading...',
+    progress: 'Progress',
+    title: 'Title',
+    role: 'Role',
+    content: 'Content',
+    name: 'Name',
+    login: 'Login',
+    register: 'Register',
+    email: 'Email',
+    password: 'Password',
+    teacher: 'Teacher',
+    student: 'Student',
+    submit: 'Submit',
+    save: 'Save',
+    dashboard: 'Dashboard',
+    lessons: 'Lessons',
+    logout: 'Logout',
+    error: 'Error',
+    success: 'Success',
+    videoUrl: 'Video URL',
+    createLesson: 'Create Lesson',
+    yourProgress: 'Your Progress',
+    completed: 'Completed',
+    viewLesson: 'View Lesson',
+    assignments: 'Assignments',
+    evaluate: 'Evaluate',
+    continue: 'Continue',
+    
+    // New translations for questions
+    addQuestions: 'Add Questions',
+    question: 'Question',
+    questionText: 'Question Text',
+    questionWeight: 'Question Weight',
+    questionType: 'Question Type',
+    singleAnswer: 'Single Answer',
+    multipleAnswers: 'Multiple Answers',
+    answerOptions: 'Answer Options',
+    addOption: 'Add Option',
+    option: 'Option',
+    correctAnswers: 'Correct Answer(s)',
+    remove: 'Remove',
+    removeOption: 'Remove option',
+    backToContent: 'Back to Content',
+    noQuestionsYet: 'No questions added yet',
+    addQuestion: 'Add Question',
+    noOptionsAdded: 'No options added',
+    enterQuestionText: 'Enter the question text here',
+    pleaseFillAllRequiredFields: 'Please fill all required fields',
+    allQuestionsNeedText: 'All questions need to have a text',
+    allQuestionsNeedOptions: 'All questions need to have at least one answer option',
+    allQuestionsNeedCorrectAnswer: 'All questions need to have at least one correct answer',
+    
+    // Fix for errors in AssignLessonForm.tsx
+    lessonsAssignedSuccessfully: 'Lessons assigned successfully',
+    selectStudentsToAssignLesson: 'Select students to assign this lesson',
+    noStudentsFound: 'No students found',
+    unnamed: 'Unnamed',
+    noEmail: 'No email',
+    saving: 'Saving...',
+    saveAssignments: 'Save Assignments'
   },
 };
 
-const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
+export function LanguageProvider({ children }: { children: ReactNode }) {
+  const [language, setLanguage] = useState<string>('pt');
 
-export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [language, setLanguage] = useState<Language>('pt');
+  useEffect(() => {
+    const savedLanguage = localStorage.getItem('language');
+    if (savedLanguage) {
+      setLanguage(savedLanguage);
+    }
+  }, []);
 
-  const t = (key: keyof typeof translations) => {
-    return translations[key][language];
+  const handleSetLanguage = (lang: string) => {
+    setLanguage(lang);
+    localStorage.setItem('language', lang);
+  };
+
+  const translate = (key: string): string => {
+    return translations[language]?.[key] || key;
   };
 
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, t }}>
+    <LanguageContext.Provider
+      value={{
+        language,
+        setLanguage: handleSetLanguage,
+        t: translate,
+      }}
+    >
       {children}
     </LanguageContext.Provider>
   );
 }
 
-export const useLanguage = () => {
-  const context = useContext(LanguageContext);
-  if (!context) {
-    throw new Error('useLanguage must be used within a LanguageProvider');
-  }
-  return context;
-};
+export const useLanguage = () => useContext(LanguageContext);
