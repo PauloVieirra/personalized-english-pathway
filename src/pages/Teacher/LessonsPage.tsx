@@ -12,10 +12,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Tables } from '@/integrations/supabase/types';
+import { Database } from '@/integrations/supabase/types';
 import { PlusCircle, Edit, Trash, Users } from 'lucide-react';
 
-type Lesson = Tables['lessons'];
+// Define the Lesson type using the Database type from Supabase
+type Lesson = Database['public']['Tables']['lessons']['Row'];
 
 export default function LessonsPage() {
   const { t } = useLanguage();
@@ -115,7 +116,6 @@ export default function LessonsPage() {
   };
 
   return (
-    
     <MainLayout requireAuth allowedRoles={['teacher']}>
       <div className="flex min-h-screen">
         <TeacherSidebar />
