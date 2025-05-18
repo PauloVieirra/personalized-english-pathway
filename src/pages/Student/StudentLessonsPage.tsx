@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import StudentSidebar from '@/components/student/StudentSidebar';
@@ -10,10 +9,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { CheckCircle, AlertCircle, Star } from 'lucide-react';
+import { CheckCircle, AlertCircle, Star, ArrowRight, ArrowLeft } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import ReactPlayer from 'react-player/lazy';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from '@/components/ui/drawer';
 
 type StudentLesson = {
   id: string;
@@ -22,11 +23,23 @@ type StudentLesson = {
     title: string;
     content: string;
     video_url: string | null;
+    questions: string | null;
   };
   completed: boolean;
   score: number | null;
   feedback: string | null;
   assigned_at: string;
+};
+
+type Question = {
+  id: string;
+  text: string;
+  type: 'multiple' | 'single';
+  options: Array<{
+    id: string;
+    text: string;
+    isCorrect: boolean;
+  }>;
 };
 
 export default function StudentLessonsPage() {
@@ -37,7 +50,20 @@ export default function StudentLessonsPage() {
   const [lessons, setLessons] = useState<StudentLesson[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedLesson, setSelectedLesson] = useState<StudentLesson | null>(null);
-  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
+  const [isLessonOpen, setIsLessonOpen] = useState(false);
+  const [currentStep, setCurrentStep] = useState<'content' | 'questions' | 'results'>('content');
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string | string[]>>({});
+  const [score, setScore] = useState<number>(0);
+  const [showCorrectAnswers, setShowCorrectAnswers] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    setIsMobile(window.innerWidth < 768);
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const loadLessons = async () => {
     if (!userDetails?.id) return;
@@ -69,11 +95,11 @@ export default function StudentLessonsPage() {
     loadLessons();
   }, [userDetails]);
 
-  const markLessonAsCompleted = async (studentLessonId: string) => {
+  const markLessonAsCompleted = async (studentLessonId: string, finalScore: number) => {
     try {
       const { error } = await supabase
         .from('student_lessons')
-        .update({ completed: true })
+        .update({ completed: true, score: finalScore })
         .eq('id', studentLessonId);
 
       if (error) throw error;
@@ -81,7 +107,7 @@ export default function StudentLessonsPage() {
       // Update local state
       setLessons(prev =>
         prev.map(item =>
-          item.id === studentLessonId ? { ...item, completed: true } : item
+          item.id === studentLessonId ? { ...item, completed: true, score: finalScore } : item
         )
       );
 
@@ -101,11 +127,117 @@ export default function StudentLessonsPage() {
 
   const openLessonDetail = (lesson: StudentLesson) => {
     setSelectedLesson(lesson);
-    setIsDetailDialogOpen(true);
+    setCurrentStep('content');
+    
+    // Parse questions if they exist
+    if (lesson.lesson.questions) {
+      try {
+        const parsedQuestions = JSON.parse(lesson.lesson.questions);
+        setQuestions(parsedQuestions);
+      } catch (error) {
+        console.error("Failed to parse questions:", error);
+        setQuestions([]);
+      }
+    } else {
+      setQuestions([]);
+    }
+    
+    // Reset answers and score
+    setSelectedAnswers({});
+    setScore(0);
+    setShowCorrectAnswers(false);
+    setIsLessonOpen(true);
+  };
+
+  const handleSelectAnswer = (questionId: string, optionId: string, type: 'multiple' | 'single') => {
+    if (type === 'single') {
+      setSelectedAnswers(prev => ({
+        ...prev,
+        [questionId]: optionId
+      }));
+    } else {
+      // For multiple choice, maintain an array of selected options
+      const currentSelections = selectedAnswers[questionId] as string[] || [];
+      let newSelections: string[];
+      
+      if (currentSelections.includes(optionId)) {
+        // If already selected, remove it
+        newSelections = currentSelections.filter(id => id !== optionId);
+      } else {
+        // Otherwise add it
+        newSelections = [...currentSelections, optionId];
+      }
+      
+      setSelectedAnswers(prev => ({
+        ...prev,
+        [questionId]: newSelections
+      }));
+    }
+  };
+
+  const calculateScore = () => {
+    if (questions.length === 0) return 10; // Full score if no questions
+    
+    let correctAnswers = 0;
+    
+    questions.forEach(question => {
+      const userAnswer = selectedAnswers[question.id];
+      const correctOptions = question.options.filter(opt => opt.isCorrect).map(opt => opt.id);
+      
+      if (question.type === 'single') {
+        // For single-choice questions
+        if (userAnswer && correctOptions.includes(userAnswer as string)) {
+          correctAnswers++;
+        }
+      } else {
+        // For multiple-choice questions
+        const userAnswerArray = userAnswer as string[] || [];
+        const allCorrect = correctOptions.every(id => userAnswerArray.includes(id));
+        const noIncorrect = userAnswerArray.every(id => correctOptions.includes(id));
+        if (allCorrect && noIncorrect && userAnswerArray.length > 0) {
+          correctAnswers++;
+        }
+      }
+    });
+    
+    // Calculate score out of 10
+    return Math.round((correctAnswers / questions.length) * 10);
+  };
+
+  const handleSubmitAnswers = () => {
+    const finalScore = calculateScore();
+    setScore(finalScore);
+    setCurrentStep('results');
+    
+    if (selectedLesson) {
+      markLessonAsCompleted(selectedLesson.id, finalScore);
+    }
+  };
+
+  const handleGoToQuestions = () => {
+    setCurrentStep('questions');
+  };
+
+  const handleGoBackToContent = () => {
+    setCurrentStep('content');
+  };
+
+  const isQuestionAnswered = (question: Question) => {
+    const answer = selectedAnswers[question.id];
+    if (question.type === 'single') {
+      return !!answer;
+    } else {
+      return Array.isArray(answer) && answer.length > 0;
+    }
   };
 
   const pendingLessons = lessons.filter(lesson => !lesson.completed);
   const completedLessons = lessons.filter(lesson => lesson.completed);
+
+  const LessonModalComponent = isMobile ? Drawer : Sheet;
+  const LessonModalContentComponent = isMobile ? DrawerContent : SheetContent;
+  const LessonModalHeaderComponent = isMobile ? DrawerHeader : SheetHeader;
+  const LessonModalTitleComponent = isMobile ? DrawerTitle : SheetTitle;
 
   return (
     <MainLayout requireAuth allowedRoles={['student']}>
@@ -152,13 +284,6 @@ export default function StudentLessonsPage() {
                               onClick={() => openLessonDetail(item)}
                             >
                               Ver Aula
-                            </Button>
-                            <Button 
-                              onClick={() => markLessonAsCompleted(item.id)}
-                              className="btn-primary"
-                            >
-                              <CheckCircle className="w-4 h-4 mr-2" />
-                              Marcar Concluída
                             </Button>
                           </div>
                         </div>
@@ -216,77 +341,262 @@ export default function StudentLessonsPage() {
             </TabsContent>
           </Tabs>
 
-          {/* Lesson Detail Dialog */}
-          <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
-            <DialogContent className="max-w-3xl max-h-[90vh]">
-              <DialogHeader>
-                <DialogTitle>{selectedLesson?.lesson.title}</DialogTitle>
-              </DialogHeader>
-              
-              <ScrollArea className="h-[70vh]">
-                <div className="space-y-6 py-4 px-1">
-                  {selectedLesson?.lesson.video_url && (
-                    <div className="aspect-video rounded-md overflow-hidden mb-6">
-                      <ReactPlayer
-                        url={selectedLesson.lesson.video_url}
-                        width="100%"
-                        height="100%"
-                        controls
-                        config={{
-                          youtube: {
-                            playerVars: { origin: window.location.origin }
-                          }
-                        }}
-                      />
-                    </div>
-                  )}
-                  
-                  <div className="prose prose-sm max-w-none">
-                    {selectedLesson?.lesson.content.split('\n').map((paragraph, idx) => (
-                      <p key={idx}>{paragraph}</p>
-                    ))}
-                  </div>
-                  
-                  {selectedLesson?.completed && (
-                    <div className="bg-gray-50 rounded-md p-4">
-                      <h3 className="font-medium mb-2">{t('feedback')}</h3>
-                      {selectedLesson.score !== null && (
-                        <div className="flex items-center mb-2">
-                          <span className="font-medium mr-2">{t('score')}:</span>
-                          <div className="flex items-center text-amber-500">
-                            <span className="text-base font-medium">{selectedLesson.score}/10</span>
-                          </div>
-                        </div>
-                      )}
-                      
-                      {selectedLesson.feedback ? (
-                        <p>{selectedLesson.feedback}</p>
-                      ) : (
-                        <p className="text-muted-foreground">Nenhum feedback disponível ainda.</p>
-                      )}
-                    </div>
-                  )}
-                  
-                  {!selectedLesson?.completed && (
-                    <Button 
-                      className="w-full"
-                      onClick={() => {
-                        if (selectedLesson) {
-                          markLessonAsCompleted(selectedLesson.id);
-                          setIsDetailDialogOpen(false);
-                        }
-                      }}
-                    >
-                      <CheckCircle className="w-4 h-4 mr-2" />
-                      Marcar como Concluída
-                    </Button>
-                  )}
-                </div>
-              </ScrollArea>
-            </DialogContent>
-          </Dialog>
+          {/* Full-screen Lesson View */}
+          {isMobile ? (
+            <Drawer open={isLessonOpen} onOpenChange={setIsLessonOpen}>
+              <DrawerContent className="max-h-[90vh]">
+                <DrawerHeader>
+                  <DrawerTitle>{selectedLesson?.lesson.title}</DrawerTitle>
+                  <DrawerDescription>
+                    {currentStep === 'content' && "Conteúdo da aula"}
+                    {currentStep === 'questions' && "Questões"}
+                    {currentStep === 'results' && "Resultados"}
+                  </DrawerDescription>
+                </DrawerHeader>
+                {renderLessonContent()}
+              </DrawerContent>
+            </Drawer>
+          ) : (
+            <Sheet open={isLessonOpen} onOpenChange={setIsLessonOpen}>
+              <SheetContent className="w-full max-w-full sm:max-w-full">
+                <SheetHeader>
+                  <SheetTitle>{selectedLesson?.lesson.title}</SheetTitle>
+                </SheetHeader>
+                {renderLessonContent()}
+              </SheetContent>
+            </Sheet>
+          )}
         </div>
       </div>
     </MainLayout>
   );
+
+  function renderLessonContent() {
+    return (
+      <ScrollArea className="h-[70vh] mt-6">
+        <div className="space-y-6 py-4 px-1">
+          {currentStep === 'content' && (
+            <>
+              {selectedLesson?.lesson.video_url && (
+                <div className="aspect-video rounded-md overflow-hidden mb-6">
+                  <ReactPlayer
+                    url={selectedLesson.lesson.video_url}
+                    width="100%"
+                    height="100%"
+                    controls
+                    config={{
+                      youtube: {
+                        playerVars: { origin: window.location.origin }
+                      }
+                    }}
+                  />
+                </div>
+              )}
+              
+              <div className="prose prose-sm max-w-none">
+                {selectedLesson?.lesson.content.split('\n').map((paragraph, idx) => (
+                  <p key={idx}>{paragraph}</p>
+                ))}
+              </div>
+              
+              <div className="pt-8">
+                {questions.length > 0 ? (
+                  <Button 
+                    className="w-full"
+                    onClick={handleGoToQuestions}
+                  >
+                    Continuar para as Questões
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                ) : (
+                  <Button 
+                    className="w-full"
+                    onClick={() => {
+                      const finalScore = 10; // Full score if no questions
+                      if (selectedLesson) {
+                        markLessonAsCompleted(selectedLesson.id, finalScore);
+                      }
+                      setScore(finalScore);
+                      setCurrentStep('results');
+                    }}
+                  >
+                    Finalizar Aula
+                    <CheckCircle className="w-4 h-4 ml-2" />
+                  </Button>
+                )}
+              </div>
+            </>
+          )}
+          
+          {currentStep === 'questions' && (
+            <>
+              <Button 
+                variant="outline" 
+                className="mb-6"
+                onClick={handleGoBackToContent}
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Voltar ao conteúdo
+              </Button>
+              
+              <div className="space-y-8">
+                {questions.map((question, qIndex) => (
+                  <div 
+                    key={question.id} 
+                    className="border rounded-lg p-6 bg-white"
+                  >
+                    <h3 className="text-lg font-medium mb-4">
+                      {qIndex + 1}. {question.text}
+                    </h3>
+                    
+                    {question.type === 'single' ? (
+                      <RadioGroup
+                        value={selectedAnswers[question.id] as string || ''}
+                        onValueChange={(value) => 
+                          handleSelectAnswer(question.id, value, 'single')
+                        }
+                        className="space-y-3"
+                      >
+                        {question.options.map(option => (
+                          <div key={option.id} className="flex items-center space-x-2">
+                            <RadioGroupItem value={option.id} id={option.id} />
+                            <label 
+                              htmlFor={option.id}
+                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                            >
+                              {option.text}
+                            </label>
+                          </div>
+                        ))}
+                      </RadioGroup>
+                    ) : (
+                      <div className="space-y-3">
+                        {question.options.map(option => {
+                          const isChecked = (selectedAnswers[question.id] as string[] || []).includes(option.id);
+                          return (
+                            <div key={option.id} className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                id={option.id}
+                                checked={isChecked}
+                                onChange={() => 
+                                  handleSelectAnswer(question.id, option.id, 'multiple')
+                                }
+                                className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                              />
+                              <label 
+                                htmlFor={option.id}
+                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                              >
+                                {option.text}
+                              </label>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+              
+              <div className="pt-8">
+                <Button 
+                  className="w-full"
+                  onClick={handleSubmitAnswers}
+                  disabled={!questions.every(isQuestionAnswered)}
+                >
+                  Submeter Respostas
+                  <CheckCircle className="w-4 h-4 ml-2" />
+                </Button>
+                
+                {!questions.every(isQuestionAnswered) && (
+                  <p className="text-center text-amber-600 text-sm mt-2">
+                    Por favor, responda todas as questões antes de continuar.
+                  </p>
+                )}
+              </div>
+            </>
+          )}
+          
+          {currentStep === 'results' && (
+            <div className="space-y-6">
+              <div className="text-center bg-gray-50 rounded-lg p-8">
+                <h2 className="text-2xl font-bold mb-2">Resultado da Aula</h2>
+                <div className="mb-4">
+                  <div className="flex justify-center items-center text-amber-500 text-3xl">
+                    <Star className="w-8 h-8 fill-current mr-2" />
+                    <span className="font-bold">{score}/10</span>
+                  </div>
+                </div>
+                
+                <Button 
+                  variant="outline"
+                  onClick={() => setShowCorrectAnswers(!showCorrectAnswers)}
+                  className="mb-4"
+                >
+                  {showCorrectAnswers ? 'Ocultar Respostas' : 'Ver Respostas Corretas'}
+                </Button>
+                
+                {showCorrectAnswers && questions.length > 0 && (
+                  <div className="mt-6 space-y-6 text-left">
+                    <h3 className="font-medium text-lg">Respostas Corretas:</h3>
+                    
+                    {questions.map((question, qIndex) => {
+                      const userAnswer = selectedAnswers[question.id];
+                      const correctOptions = question.options.filter(opt => opt.isCorrect);
+                      
+                      let isCorrect = false;
+                      if (question.type === 'single') {
+                        isCorrect = correctOptions.some(opt => opt.id === userAnswer);
+                      } else {
+                        const userAnswerArray = userAnswer as string[] || [];
+                        const correctIds = correctOptions.map(opt => opt.id);
+                        isCorrect = 
+                          correctIds.every(id => userAnswerArray.includes(id)) && 
+                          userAnswerArray.every(id => correctIds.includes(id));
+                      }
+                      
+                      return (
+                        <div key={question.id} className="border rounded-lg p-4">
+                          <div className="flex items-start">
+                            <div className={`rounded-full p-1 mr-2 ${isCorrect ? 'bg-green-100' : 'bg-red-100'}`}>
+                              {isCorrect ? (
+                                <CheckCircle className="h-4 w-4 text-green-600" />
+                              ) : (
+                                <AlertCircle className="h-4 w-4 text-red-600" />
+                              )}
+                            </div>
+                            <div>
+                              <h4 className="font-medium">
+                                {qIndex + 1}. {question.text}
+                              </h4>
+                              <div className="mt-2">
+                                <p className="text-sm font-medium">Resposta(s) correta(s):</p>
+                                <ul className="list-disc ml-5 text-sm">
+                                  {correctOptions.map(option => (
+                                    <li key={option.id}>{option.text}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                
+                <Button 
+                  className="mt-8"
+                  onClick={() => setIsLessonOpen(false)}
+                >
+                  Voltar às Aulas
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </ScrollArea>
+    );
+  }
 }
