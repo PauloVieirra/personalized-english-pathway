@@ -23,6 +23,7 @@ export default function CreateLessonForm({ onSuccess }: { onSuccess?: () => void
   const { toast } = useToast();
 
   const addQuestion = () => {
+    console.log('Adding new question');
     const newQuestion: Question = {
       id: `question-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       text: '',
