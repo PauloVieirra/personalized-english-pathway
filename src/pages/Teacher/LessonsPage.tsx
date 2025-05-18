@@ -13,7 +13,9 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Database } from '@/integrations/supabase/types';
-import { PlusCircle, Edit, Trash, Users } from 'lucide-react';
+import { PlusCircle, Edit, Trash, Users, X } from 'lucide-react';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from '@/components/ui/sheet';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 // Define the Lesson type using the Database type from Supabase
 type Lesson = Database['public']['Tables']['lessons']['Row'];
@@ -25,7 +27,7 @@ export default function LessonsPage() {
   
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [loading, setLoading] = useState(true);
-  const [openCreateDialog, setOpenCreateDialog] = useState(false);
+  const [openCreateSheet, setOpenCreateSheet] = useState(false);
   const [openAssignDialog, setOpenAssignDialog] = useState(false);
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
 
@@ -59,7 +61,7 @@ export default function LessonsPage() {
   }, [user]);
 
   const handleCreateSuccess = () => {
-    setOpenCreateDialog(false);
+    setOpenCreateSheet(false);
     loadLessons();
   };
 
@@ -122,20 +124,10 @@ export default function LessonsPage() {
         <div className="flex-1 p-8">
           <div className="flex justify-between items-center mb-8">
             <h1 className="text-3xl font-bold">{t('lessons')}</h1>
-            <Dialog open={openCreateDialog} onOpenChange={setOpenCreateDialog}>
-              <DialogTrigger asChild>
-                <Button className="btn-primary">
-                  <PlusCircle className="w-4 h-4 mr-2" />
-                  {t('createLesson')}
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[600px]">
-                <DialogHeader>
-                  <DialogTitle>{t('createLesson')}</DialogTitle>
-                </DialogHeader>
-                <CreateLessonForm onSuccess={handleCreateSuccess} />
-              </DialogContent>
-            </Dialog>
+            <Button className="btn-primary" onClick={() => setOpenCreateSheet(true)}>
+              <PlusCircle className="w-4 h-4 mr-2" />
+              {t('createLesson')}
+            </Button>
           </div>
 
           <Card>
@@ -148,7 +140,7 @@ export default function LessonsPage() {
               ) : lessons.length === 0 ? (
                 <div className="text-center py-8">
                   <p className="text-gray-500 mb-4">Você ainda não criou nenhuma aula.</p>
-                  <Button onClick={() => setOpenCreateDialog(true)}>
+                  <Button onClick={() => setOpenCreateSheet(true)}>
                     {t('createLesson')}
                   </Button>
                 </div>
@@ -211,6 +203,28 @@ export default function LessonsPage() {
               )}
             </CardContent>
           </Card>
+
+          {/* Full screen sheet for creating lessons */}
+          <Sheet open={openCreateSheet} onOpenChange={setOpenCreateSheet}>
+            <SheetContent side="right" className="w-full sm:max-w-full p-0 border-none">
+              <div className="flex flex-col h-screen">
+                <SheetHeader className="bg-gray-100 p-6 flex flex-row items-center justify-between">
+                  <SheetTitle className="text-2xl">{t('createLesson')}</SheetTitle>
+                  <SheetClose asChild>
+                    <Button variant="ghost" size="icon">
+                      <X className="h-5 w-5" />
+                    </Button>
+                  </SheetClose>
+                </SheetHeader>
+                
+                <ScrollArea className="flex-1 p-6">
+                  <div className="max-w-3xl mx-auto">
+                    <CreateLessonForm onSuccess={handleCreateSuccess} />
+                  </div>
+                </ScrollArea>
+              </div>
+            </SheetContent>
+          </Sheet>
 
           <Dialog open={openAssignDialog} onOpenChange={setOpenAssignDialog}>
             <DialogContent className="sm:max-w-[600px]">

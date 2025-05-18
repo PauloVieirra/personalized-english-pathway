@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,8 +8,9 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/use-toast';
-import { Plus } from 'lucide-react';
+import { Plus, Trash } from 'lucide-react';
 import QuestionForm, { Question } from './QuestionForm';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function CreateLessonForm({ onSuccess }: { onSuccess?: () => void }) {
   const [title, setTitle] = useState('');
@@ -159,88 +161,106 @@ export default function CreateLessonForm({ onSuccess }: { onSuccess?: () => void
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-6">
       {currentStep === 'content' ? (
         <>
-          <div className="space-y-2">
-            <Label htmlFor="title">{t('title')} <span className="text-red-500">*</span></Label>
-            <Input
-              id="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              required
-              className="form-input"
-            />
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Conteúdo da Aula</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="title">{t('title')} <span className="text-red-500">*</span></Label>
+                <Input
+                  id="title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  required
+                  className="form-input"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="content">{t('content')} <span className="text-red-500">*</span></Label>
+                <Textarea
+                  id="content"
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  required
+                  className="form-input min-h-[200px]"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="videoUrl">{t('videoUrl')}</Label>
+                <Input
+                  id="videoUrl"
+                  value={videoUrl}
+                  onChange={(e) => setVideoUrl(e.target.value)}
+                  placeholder="https://youtube.com/..."
+                  className="form-input"
+                />
+              </div>
+            </CardContent>
+          </Card>
           
-          <div className="space-y-2">
-            <Label htmlFor="content">{t('content')} <span className="text-red-500">*</span></Label>
-            <Textarea
-              id="content"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              required
-              className="form-input min-h-[200px]"
-            />
+          <div className="flex justify-end">
+            <Button 
+              type="submit" 
+              className="w-full md:w-auto" 
+              disabled={isLoading}
+              size="lg"
+            >
+              {t('continue')}
+            </Button>
           </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="videoUrl">{t('videoUrl')}</Label>
-            <Input
-              id="videoUrl"
-              value={videoUrl}
-              onChange={(e) => setVideoUrl(e.target.value)}
-              placeholder="https://youtube.com/..."
-              className="form-input"
-            />
-          </div>
-          
-          <Button 
-            type="submit" 
-            className="w-full" 
-            disabled={isLoading}
-          >
-            {t('continue')}
-          </Button>
         </>
       ) : (
         <>
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold">{t('addQuestions')}</h2>
-            <Button 
-              type="button" 
-              onClick={() => setCurrentStep('content')}
-              variant="outline"
-            >
-              {t('backToContent')}
-            </Button>
-          </div>
-          
-          {questions.length > 0 ? (
-            <div className="space-y-4">
-              {questions.map((question, index) => (
-                <QuestionForm
-                  key={question.id}
-                  questionNumber={index + 1}
-                  question={question}
-                  onUpdate={updateQuestion}
-                  onRemove={() => removeQuestion(question.id)}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 border border-dashed border-gray-300 rounded-lg">
-              <p className="text-gray-500 mb-4">{t('noQuestionsYet')}</p>
-              <Button 
-                type="button" 
-                onClick={addQuestion}
-                variant="outline"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                {t('addQuestion')}
-              </Button>
-            </div>
-          )}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex justify-between items-center">
+                <span>{t('addQuestions')}</span>
+                <Button 
+                  type="button" 
+                  onClick={() => setCurrentStep('content')}
+                  variant="outline"
+                >
+                  {t('backToContent')}
+                </Button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {questions.length > 0 ? (
+                <div className="space-y-6">
+                  {questions.map((question, index) => (
+                    <Card key={question.id} className="border border-gray-200">
+                      <CardContent className="pt-6">
+                        <QuestionForm
+                          questionNumber={index + 1}
+                          question={question}
+                          onUpdate={updateQuestion}
+                          onRemove={() => removeQuestion(question.id)}
+                        />
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 border border-dashed border-gray-300 rounded-lg">
+                  <p className="text-gray-500 mb-4">{t('noQuestionsYet')}</p>
+                  <Button 
+                    type="button" 
+                    onClick={addQuestion}
+                    variant="outline"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    {t('addQuestion')}
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
           
           <div className="flex flex-col sm:flex-row gap-3 pt-4">
             <Button 
@@ -256,6 +276,7 @@ export default function CreateLessonForm({ onSuccess }: { onSuccess?: () => void
             <Button 
               type="submit"
               className="flex-1"
+              size="lg"
               disabled={isLoading}
             >
               {isLoading ? t('loading') : t('save')}
