@@ -60,12 +60,13 @@ export default function RankingPage() {
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
         
-        // Get completed lessons from the last 7 days with scores
-        const { data, error } = await supabase
+        console.log('Fetching student lessons since:', sevenDaysAgo.toISOString());
+        
+        // First, get completed student lessons
+        const { data: lessonsData, error: lessonsError } = await supabase
           .from('student_lessons')
           .select(`
             student_id,
-            user_profile:student_id(name),
             score,
             assigned_at,
             completed
@@ -74,9 +75,42 @@ export default function RankingPage() {
           .gte('assigned_at', sevenDaysAgo.toISOString())
           .order('assigned_at', { ascending: false });
 
-        if (error) throw error;
+        if (lessonsError) {
+          console.error('Error fetching student lessons:', lessonsError);
+          throw lessonsError;
+        }
         
-        console.log('Fetched student_lessons data for ranking page:', data);
+        console.log('Fetched student_lessons data for ranking page:', lessonsData);
+        
+        if (!lessonsData || lessonsData.length === 0) {
+          console.log('No completed lessons found in the last 7 days');
+          setUsers([]);
+          setLoading(false);
+          return;
+        }
+        
+        // Get unique student IDs from the lessons data
+        const studentIds = [...new Set(lessonsData.map(lesson => lesson.student_id))];
+        console.log('Unique student IDs:', studentIds);
+        
+        // Then fetch profile data for these students
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('user_profile')
+          .select('id, name')
+          .in('id', studentIds);
+          
+        if (profilesError) {
+          console.error('Error fetching user profiles:', profilesError);
+          throw profilesError;
+        }
+        
+        console.log('Fetched user profiles:', profilesData);
+        
+        // Map profiles to a dictionary for easy lookup
+        const profilesMap = new Map();
+        profilesData?.forEach(profile => {
+          profilesMap.set(profile.id, profile.name);
+        });
         
         // Group lessons by student and calculate average score
         const studentData: Record<string, {
@@ -87,9 +121,9 @@ export default function RankingPage() {
           lastCompletionDate: string | null;
         }> = {};
         
-        data?.forEach((item) => {
+        lessonsData?.forEach((item) => {
           const studentId = item.student_id;
-          const studentName = (item.user_profile as any)?.name || 'Unknown Student';
+          const studentName = profilesMap.get(studentId) || 'Unknown Student';
           const score = item.score || 0; // Default to 0 if no score
           
           if (!studentData[studentId]) {
