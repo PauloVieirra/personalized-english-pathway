@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
@@ -20,9 +19,14 @@ type AuthContextType = {
   signOut: () => Promise<void>;
 };
 
+// Create the context with an undefined initial value
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Log that the context has been created
+console.log('AuthContext created');
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  console.log('AuthProvider rendering');
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [userDetails, setUserDetails] = useState<AuthContextType['userDetails']>(null);
@@ -30,6 +34,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
 
   useEffect(() => {
+    console.log('AuthProvider useEffect running');
     // Configurar listener para mudanças no estado de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
       console.log('Auth state changed:', event);
@@ -47,23 +52,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Verificar sessão inicial
     supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      console.log('Initial session check:', initialSession ? 'Found session' : 'No session');
       setSession(initialSession);
       setUser(initialSession?.user ?? null);
       
       if (initialSession?.user) {
         fetchUserDetails(initialSession.user.id);
+      } else {
+        setIsLoading(false);
       }
-      
-      setIsLoading(false);
     });
 
     return () => {
+      console.log('Unsubscribing from auth changes');
       subscription.unsubscribe();
     };
   }, []);
 
   const fetchUserDetails = async (userId: string) => {
     try {
+      console.log('Fetching user details for ID:', userId);
       // Primeiro tentar buscar da tabela user_profile
       let { data, error } = await supabase
         .from('user_profile')
@@ -72,6 +80,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .single();
 
       if (error || !data) {
+        console.log('No data in user_profile, trying users table');
         // Se não encontrar no user_profile, tentar da tabela users
         const { data: userData, error: userError } = await supabase
           .from('users')
@@ -86,8 +95,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
         
         if (userData) {
+          console.log('Found user data in users table:', userData);
           data = userData;
         }
+      } else {
+        console.log('Found user data in user_profile:', data);
       }
 
       if (data) {
@@ -99,9 +111,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           status: data.status || 'active'
         });
       }
+      
+      setIsLoading(false);
     } catch (error) {
       console.error('Error fetching user details:', error);
       setUserDetails(null);
+      setIsLoading(false);
     }
   };
 
@@ -244,12 +259,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signOut,
   };
 
+  console.log('AuthProvider providing value:', { 
+    session: !!session, 
+    user: !!user, 
+    userDetails: !!userDetails, 
+    isLoading 
+  });
+
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export const useAuth = () => {
+  console.log('useAuth called');
   const context = useContext(AuthContext);
   if (!context) {
+    console.error('useAuth must be used within an AuthProvider');
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;

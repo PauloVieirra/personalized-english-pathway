@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
 import MainLayout from '@/components/layout/MainLayout';
@@ -13,8 +12,28 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Users, MessageSquare, Mail, Star, ChevronRight } from 'lucide-react';
 
 const Index = () => {
+  console.log('Index component rendering');
+  
+  let authData = null;
+  let userDetails = null;
+  let user = null;
+  
+  try {
+    console.log('About to call useAuth in Index');
+    const auth = useAuth();
+    console.log('useAuth successful:', auth);
+    authData = auth;
+    userDetails = auth.userDetails;
+    user = auth.user;
+  } catch (error) {
+    console.error('Error using auth in Index:', error);
+  }
+  
   const { t } = useLanguage();
-  const { user, userDetails } = useAuth();
+  
+  useEffect(() => {
+    console.log('Index component mounted');
+  }, []);
 
   return (
     <MainLayout>
