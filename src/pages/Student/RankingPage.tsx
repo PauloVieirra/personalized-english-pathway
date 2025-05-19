@@ -76,6 +76,8 @@ export default function RankingPage() {
 
         if (error) throw error;
         
+        console.log('Fetched student_lessons data for ranking page:', data);
+        
         // Group lessons by student and calculate average score
         const studentData: Record<string, {
           id: string;
@@ -115,6 +117,8 @@ export default function RankingPage() {
           }
         });
         
+        console.log('Processed student data for ranking page:', studentData);
+        
         // Calculate average score for each student and convert to array
         const rankingArray = Object.values(studentData)
           .map(student => {
@@ -152,6 +156,7 @@ export default function RankingPage() {
             rank: index + 1
           }));
         
+        console.log('Final ranking array for ranking page:', rankingArray);
         setUsers(rankingArray);
       } catch (error) {
         console.error('Error loading ranking:', error);
