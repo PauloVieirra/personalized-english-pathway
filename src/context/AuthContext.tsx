@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
-import { supabase, ensureTables } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/use-toast';
 
 type AuthContextType = {
@@ -28,11 +28,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [userDetails, setUserDetails] = useState<AuthContextType['userDetails']>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-
-  // Função para verificar se as tabelas necessárias existem
-  const ensureTablesExist = async () => {
-    await ensureTables();
-  };
 
   useEffect(() => {
     // Configurar listener para mudanças no estado de autenticação
@@ -62,9 +57,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(false);
     });
 
-    // Verificar/criar as tabelas necessárias
-    ensureTablesExist();
-
     return () => {
       subscription.unsubscribe();
     };
@@ -72,9 +64,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchUserDetails = async (userId: string) => {
     try {
-      // Garantir que as tabelas existem
-      await ensureTablesExist();
-      
       // Primeiro tentar buscar da tabela user_profile
       let { data, error } = await supabase
         .from('user_profile')
@@ -149,9 +138,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUp = async (email: string, password: string, name: string, role: 'teacher' | 'student' | 'admin') => {
     try {
-      // Garantir que as tabelas existem
-      await ensureTablesExist();
-      
       // Criar usuário de autenticação
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
