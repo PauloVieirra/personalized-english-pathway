@@ -7,8 +7,10 @@ import { cn } from '@/lib/utils';
 type RankingUser = {
   id: string;
   name: string;
-  points: number;
+  averageScore: number;
   rank: number;
+  completedLessons: number;
+  lastCompletionDate: string | null;
 };
 
 interface StudentRankingProps {
@@ -28,12 +30,15 @@ export default function StudentRanking({ limit = 10, currentUserId }: StudentRan
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
         
-        // Get completed lessons from the last 7 days grouped by student
+        // Get completed lessons from the last 7 days with scores
         const { data, error } = await supabase
           .from('student_lessons')
           .select(`
             student_id,
-            user_profile:student_id(name)
+            user_profile:student_id(name),
+            score,
+            assigned_at,
+            completed
           `)
           .eq('completed', true)
           .gte('assigned_at', sevenDaysAgo.toISOString())
@@ -41,28 +46,77 @@ export default function StudentRanking({ limit = 10, currentUserId }: StudentRan
 
         if (error) throw error;
         
-        // Count points per student (1 point per completed lesson)
-        const pointsByStudent: Record<string, { id: string; name: string; points: number }> = {};
+        // Group lessons by student and calculate average score
+        const studentData: Record<string, {
+          id: string;
+          name: string;
+          scores: number[];
+          completedLessons: number;
+          lastCompletionDate: string | null;
+        }> = {};
         
         data?.forEach((item) => {
           const studentId = item.student_id;
           const studentName = (item.user_profile as any)?.name || 'Unknown Student';
+          const score = item.score || 0; // Default to 0 if no score
           
-          if (!pointsByStudent[studentId]) {
-            pointsByStudent[studentId] = {
+          if (!studentData[studentId]) {
+            studentData[studentId] = {
               id: studentId,
               name: studentName,
-              points: 0
+              scores: [],
+              completedLessons: 0,
+              lastCompletionDate: null
             };
           }
           
-          pointsByStudent[studentId].points += 1;
+          // Add score to the array
+          if (item.score !== null) {
+            studentData[studentId].scores.push(score);
+          }
+          
+          // Increment completed lessons count
+          studentData[studentId].completedLessons += 1;
+          
+          // Track the most recent completion date
+          if (!studentData[studentId].lastCompletionDate || 
+              new Date(item.assigned_at) > new Date(studentData[studentId].lastCompletionDate)) {
+            studentData[studentId].lastCompletionDate = item.assigned_at;
+          }
         });
         
-        // Convert to array and sort by points
-        const rankingArray = Object.values(pointsByStudent)
-          .sort((a, b) => b.points - a.points)
+        // Calculate average score for each student and convert to array
+        const rankingArray = Object.values(studentData)
+          .map(student => {
+            // Calculate average score
+            const averageScore = student.scores.length > 0
+              ? student.scores.reduce((sum, score) => sum + score, 0) / student.scores.length
+              : 0;
+              
+            return {
+              id: student.id,
+              name: student.name,
+              averageScore: Number(averageScore.toFixed(1)),
+              completedLessons: student.completedLessons,
+              lastCompletionDate: student.lastCompletionDate,
+              rank: 0 // Will be assigned after sorting
+            };
+          })
+          // Sort by average score (desc), then by lastCompletionDate (asc)
+          .sort((a, b) => {
+            // First by average score (higher first)
+            if (b.averageScore !== a.averageScore) {
+              return b.averageScore - a.averageScore;
+            }
+            // Then by completion date (earlier first)
+            if (a.lastCompletionDate && b.lastCompletionDate) {
+              return new Date(a.lastCompletionDate).getTime() - new Date(b.lastCompletionDate).getTime();
+            }
+            return 0;
+          })
+          // Slice to get the requested number of entries
           .slice(0, limit)
+          // Assign ranks
           .map((student, index) => ({
             ...student,
             rank: index + 1
@@ -121,9 +175,12 @@ export default function StudentRanking({ limit = 10, currentUserId }: StudentRan
                   {user.name} {user.id === currentUserId && "(Você)"}
                 </span>
               </div>
-              <div className="flex items-center space-x-1">
-                <span className="font-bold">{user.points}</span>
-                <span className="text-xs text-gray-500">pts</span>
+              <div className="flex flex-col items-end">
+                <div className="flex items-center space-x-1">
+                  <span className="font-bold">{user.averageScore}</span>
+                  <span className="text-xs text-gray-500">média</span>
+                </div>
+                <span className="text-xs text-gray-500">{user.completedLessons} aulas</span>
               </div>
             </li>
           ))}
