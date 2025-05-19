@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
-import { Book, BarChart } from 'lucide-react';
+import { Book, BarChart, Trophy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function StudentSidebar() {
@@ -19,6 +19,11 @@ export default function StudentSidebar() {
       label: t('myLessons'),
       href: '/student/lessons',
       icon: <Book size={18} />,
+    },
+    {
+      label: 'Ranking',
+      href: '/student/ranking',
+      icon: <Trophy size={18} />,
     },
   ];
 

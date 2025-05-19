@@ -8,6 +8,9 @@ import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Book, CheckCircle } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import StudentRanking from '@/components/student/StudentRanking';
+import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 
 type DashboardStats = {
   totalLessons: number;
@@ -18,6 +21,7 @@ type DashboardStats = {
 export default function StudentDashboard() {
   const { t } = useLanguage();
   const { userDetails } = useAuth();
+  const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats>({
     totalLessons: 0,
     completedLessons: 0,
@@ -73,6 +77,10 @@ export default function StudentDashboard() {
     ? Math.round((stats.completedLessons / stats.totalLessons) * 100) 
     : 0;
 
+  const handleViewFullRanking = () => {
+    navigate('/student/ranking');
+  };
+
   return (
     <MainLayout requireAuth allowedRoles={['student']}>
       <div className="flex min-h-screen">
@@ -80,66 +88,86 @@ export default function StudentDashboard() {
         <div className="flex-1 p-8">
           <h1 className="text-3xl font-bold mb-8">{t('dashboard')}</h1>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{t('lessons')}</CardTitle>
-                <Book className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{loading ? '...' : stats.totalLessons}</div>
-                <p className="text-xs text-muted-foreground">
-                  Total de aulas atribuídas
-                </p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{t('completed')}</CardTitle>
-                <CheckCircle className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{loading ? '...' : stats.completedLessons}</div>
-                <p className="text-xs text-muted-foreground">
-                  Total de aulas concluídas
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle>{t('progress')}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Progresso Total</span>
-                  <span>{completionPercentage}%</span>
-                </div>
-                <Progress value={completionPercentage} className="h-2" />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">{t('lessons')}</CardTitle>
+                    <Book className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{loading ? '...' : stats.totalLessons}</div>
+                    <p className="text-xs text-muted-foreground">
+                      Total de aulas atribuídas
+                    </p>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">{t('completed')}</CardTitle>
+                    <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{loading ? '...' : stats.completedLessons}</div>
+                    <p className="text-xs text-muted-foreground">
+                      Total de aulas concluídas
+                    </p>
+                  </CardContent>
+                </Card>
               </div>
-              
-              {stats.completedLessons > 0 && (
-                <div className="mt-6">
-                  <h3 className="text-sm font-medium mb-2">{t('score')}</h3>
-                  <div className="text-2xl font-bold">
-                    {stats.averageScore > 0 
-                      ? `${stats.averageScore.toFixed(1)}/10` 
-                      : 'Sem avaliações'
-                    }
+
+              <Card className="mb-6">
+                <CardHeader>
+                  <CardTitle>{t('progress')}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>Progresso Total</span>
+                      <span>{completionPercentage}%</span>
+                    </div>
+                    <Progress value={completionPercentage} className="h-2" />
                   </div>
-                </div>
-              )}
-              
-              {stats.totalLessons === 0 && !loading && (
-                <div className="text-center py-4 text-muted-foreground">
-                  Você ainda não tem aulas atribuídas.
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                  
+                  {stats.completedLessons > 0 && (
+                    <div className="mt-6">
+                      <h3 className="text-sm font-medium mb-2">{t('score')}</h3>
+                      <div className="text-2xl font-bold">
+                        {stats.averageScore > 0 
+                          ? `${stats.averageScore.toFixed(1)}/10` 
+                          : 'Sem avaliações'
+                        }
+                      </div>
+                    </div>
+                  )}
+                  
+                  {stats.totalLessons === 0 && !loading && (
+                    <div className="text-center py-4 text-muted-foreground">
+                      Você ainda não tem aulas atribuídas.
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="lg:col-span-1">
+              <Card className="h-full">
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <span>Ranking Semanal</span>
+                    <Button variant="ghost" size="sm" onClick={handleViewFullRanking}>
+                      Ver todos
+                    </Button>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <StudentRanking limit={10} currentUserId={userDetails?.id} />
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         </div>
       </div>
     </MainLayout>

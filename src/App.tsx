@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -15,6 +16,7 @@ import LessonsPage from "./pages/Teacher/LessonsPage";
 import StudentsPage from "./pages/Teacher/StudentsPage";
 import StudentDashboard from "./pages/Student/StudentDashboard";
 import StudentLessonsPage from "./pages/Student/StudentLessonsPage";
+import RankingPage from "./pages/Student/RankingPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -41,6 +43,7 @@ const App = () => (
                 {/* Student routes */}
                 <Route path="/student/dashboard" element={<StudentDashboard />} />
                 <Route path="/student/lessons" element={<StudentLessonsPage />} />
+                <Route path="/student/ranking" element={<RankingPage />} />
                 
                 {/* Catch-all route for 404 */}
                 <Route path="*" element={<NotFound />} />
