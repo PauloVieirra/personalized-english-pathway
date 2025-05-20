@@ -13,6 +13,7 @@ import LoginPage from "./pages/Auth/LoginPage";
 import RegisterPage from "./pages/Auth/RegisterPage";
 import TeacherDashboard from "./pages/Teacher/TeacherDashboard";
 import LessonsPage from "./pages/Teacher/LessonsPage";
+import CoursesPage from "./pages/Teacher/CoursesPage";
 import StudentsPage from "./pages/Teacher/StudentsPage";
 import StudentDashboard from "./pages/Student/StudentDashboard";
 import StudentLessonsPage from "./pages/Student/StudentLessonsPage";
@@ -38,6 +39,7 @@ const App = () => (
                 {/* Teacher routes */}
                 <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
                 <Route path="/teacher/lessons" element={<LessonsPage />} />
+                <Route path="/teacher/courses" element={<CoursesPage />} />
                 <Route path="/teacher/students" element={<StudentsPage />} />
                 
                 {/* Student routes */}
