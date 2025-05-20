@@ -4,6 +4,7 @@ import MainLayout from '@/components/layout/MainLayout';
 import TeacherSidebar from '@/components/teacher/TeacherSidebar';
 import CreateLessonForm from '@/components/teacher/CreateLessonForm';
 import AssignLessonForm from '@/components/teacher/AssignLessonForm';
+import EditLessonForm from '@/components/teacher/EditLessonForm';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -28,8 +29,10 @@ export default function LessonsPage() {
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [loading, setLoading] = useState(true);
   const [openCreateSheet, setOpenCreateSheet] = useState(false);
+  const [openEditSheet, setOpenEditSheet] = useState(false);
   const [openAssignDialog, setOpenAssignDialog] = useState(false);
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
+  const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
 
   const loadLessons = async () => {
     if (!user) return;
@@ -65,12 +68,44 @@ export default function LessonsPage() {
     loadLessons();
   };
 
+  const handleEditSuccess = () => {
+    setOpenEditSheet(false);
+    setCurrentLesson(null);
+    loadLessons();
+    toast({
+      title: t('success'),
+      description: 'Aula atualizada com sucesso!'
+    });
+  };
+
   const handleAssignSuccess = () => {
     setOpenAssignDialog(false);
     toast({
       title: t('success'),
       description: 'Aula atribuída com sucesso!'
     });
+  };
+
+  const handleEditLesson = async (lessonId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('lessons')
+        .select('*')
+        .eq('id', lessonId)
+        .single();
+        
+      if (error) throw error;
+      
+      setCurrentLesson(data);
+      setOpenEditSheet(true);
+    } catch (error: any) {
+      console.error('Error loading lesson for edit:', error.message);
+      toast({
+        title: t('error'),
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleAssignLesson = (lessonId: string) => {
@@ -166,12 +201,7 @@ export default function LessonsPage() {
                               size="sm" 
                               variant="outline"
                               className="flex items-center gap-1"
-                              onClick={() => {
-                                toast({
-                                  title: "Funcionalidade em breve",
-                                  description: "A edição de aulas estará disponível em breve."
-                                });
-                              }}
+                              onClick={() => handleEditLesson(lesson.id)}
                             >
                               <Edit className="h-3.5 w-3.5" />
                               <span className="sr-only">Editar</span>
@@ -220,6 +250,33 @@ export default function LessonsPage() {
                 <ScrollArea className="flex-1 p-6">
                   <div className="max-w-3xl mx-auto">
                     <CreateLessonForm onSuccess={handleCreateSuccess} />
+                  </div>
+                </ScrollArea>
+              </div>
+            </SheetContent>
+          </Sheet>
+
+          {/* Full screen sheet for editing lessons */}
+          <Sheet open={openEditSheet} onOpenChange={setOpenEditSheet}>
+            <SheetContent side="right" className="w-full sm:max-w-full p-0 border-none">
+              <div className="flex flex-col h-screen">
+                <SheetHeader className="bg-gray-100 p-6 flex flex-row items-center justify-between">
+                  <SheetTitle className="text-2xl">Editar Aula</SheetTitle>
+                  <SheetClose asChild>
+                    <Button variant="ghost" size="icon">
+                      <X className="h-5 w-5" />
+                    </Button>
+                  </SheetClose>
+                </SheetHeader>
+                
+                <ScrollArea className="flex-1 p-6">
+                  <div className="max-w-3xl mx-auto">
+                    {currentLesson && (
+                      <EditLessonForm 
+                        lesson={currentLesson} 
+                        onSuccess={handleEditSuccess} 
+                      />
+                    )}
                   </div>
                 </ScrollArea>
               </div>
