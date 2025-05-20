@@ -1,4 +1,5 @@
 
+import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -23,39 +24,41 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 const App = () => (
-  <BrowserRouter>
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <LanguageProvider>
-          <AccessibilityProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/register" element={<RegisterPage />} />
-                
-                {/* Teacher routes */}
-                <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
-                <Route path="/teacher/lessons" element={<LessonsPage />} />
-                <Route path="/teacher/courses" element={<CoursesPage />} />
-                <Route path="/teacher/students" element={<StudentsPage />} />
-                
-                {/* Student routes */}
-                <Route path="/student/dashboard" element={<StudentDashboard />} />
-                <Route path="/student/lessons" element={<StudentLessonsPage />} />
-                <Route path="/student/ranking" element={<RankingPage />} />
-                
-                {/* Catch-all route for 404 */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </TooltipProvider>
-          </AccessibilityProvider>
-        </LanguageProvider>
-      </AuthProvider>
-    </QueryClientProvider>
-  </BrowserRouter>
+  <React.StrictMode>
+    <BrowserRouter>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <LanguageProvider>
+            <AccessibilityProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Sonner />
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/login" element={<LoginPage />} />
+                  <Route path="/register" element={<RegisterPage />} />
+                  
+                  {/* Teacher routes */}
+                  <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
+                  <Route path="/teacher/lessons" element={<LessonsPage />} />
+                  <Route path="/teacher/courses" element={<CoursesPage />} />
+                  <Route path="/teacher/students" element={<StudentsPage />} />
+                  
+                  {/* Student routes */}
+                  <Route path="/student/dashboard" element={<StudentDashboard />} />
+                  <Route path="/student/lessons" element={<StudentLessonsPage />} />
+                  <Route path="/student/ranking" element={<RankingPage />} />
+                  
+                  {/* Catch-all route for 404 */}
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </TooltipProvider>
+            </AccessibilityProvider>
+          </LanguageProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </BrowserRouter>
+  </React.StrictMode>
 );
 
 export default App;
