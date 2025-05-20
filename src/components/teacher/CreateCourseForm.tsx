@@ -46,6 +46,8 @@ export default function CreateCourseForm({ onSuccess }: CreateCourseFormProps) {
 
     setIsLoading(true);
     try {
+      console.log('Creating course with teacher_id:', user.id);
+      
       const { data, error } = await supabase
         .from('courses')
         .insert({
@@ -56,6 +58,7 @@ export default function CreateCourseForm({ onSuccess }: CreateCourseFormProps) {
         .select();
 
       if (error) {
+        console.error('Supabase error:', error);
         throw error;
       }
 
