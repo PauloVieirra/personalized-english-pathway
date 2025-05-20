@@ -138,13 +138,14 @@ export default function EditLessonForm({ lesson, onSuccess }: EditLessonFormProp
 
     setIsLoading(true);
     try {
+      // FIX: Convert questions array to JSON string when updating
       const { data, error } = await supabase
         .from('lessons')
         .update({
           title,
           content,
           video_url: videoUrl || null,
-          questions: questions.length > 0 ? questions : null
+          questions: questions.length > 0 ? JSON.stringify(questions) : null
         })
         .eq('id', lesson.id)
         .select();
