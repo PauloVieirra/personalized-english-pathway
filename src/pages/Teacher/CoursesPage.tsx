@@ -9,7 +9,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { PlusCircle, Edit, Trash, FileText } from 'lucide-react';
+import { PlusCircle, Edit, Trash, FileText, Image as ImageIcon } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import CreateCourseForm from '@/components/teacher/CreateCourseForm';
@@ -17,6 +17,7 @@ import EditCourseForm from '@/components/teacher/EditCourseForm';
 import ManageCourseLessonsForm from '@/components/teacher/ManageCourseLessonsForm';
 import { X } from 'lucide-react';
 import { Database } from '@/integrations/supabase/types';
+import { Avatar } from '@/components/ui/avatar';
 
 // Define o tipo Course usando o tipo do Supabase
 type Course = Database['public']['Tables']['courses']['Row'];
@@ -160,6 +161,7 @@ export default function CoursesPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead>Imagem</TableHead>
                       <TableHead>Título</TableHead>
                       <TableHead>Data de Criação</TableHead>
                       <TableHead className="text-right">Ações</TableHead>
@@ -168,6 +170,21 @@ export default function CoursesPage() {
                   <TableBody>
                     {courses.map(course => (
                       <TableRow key={course.id}>
+                        <TableCell>
+                          <div className="h-12 w-16 relative overflow-hidden rounded-md">
+                            {course.image_url ? (
+                              <img 
+                                src={course.image_url} 
+                                alt={course.title} 
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <div className="h-full w-full bg-gray-100 flex items-center justify-center">
+                                <ImageIcon className="h-6 w-6 text-gray-400" />
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell className="font-medium">{course.title}</TableCell>
                         <TableCell>
                           {new Date(course.created_at).toLocaleDateString()}
