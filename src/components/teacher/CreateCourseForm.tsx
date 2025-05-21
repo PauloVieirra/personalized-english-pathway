@@ -20,7 +20,7 @@ export default function CreateCourseForm({ onSuccess }: CreateCourseFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   
   const { t } = useLanguage();
-  const { user } = useAuth();
+  const { user, userDetails } = useAuth();
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -44,9 +44,19 @@ export default function CreateCourseForm({ onSuccess }: CreateCourseFormProps) {
       return;
     }
 
+    if (!userDetails || userDetails.role !== 'teacher') {
+      toast({
+        title: t('error'),
+        description: 'Apenas professores podem criar cursos.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
       console.log('Creating course with teacher_id:', user.id);
+      console.log('User details:', userDetails);
       
       const { data, error } = await supabase
         .from('courses')

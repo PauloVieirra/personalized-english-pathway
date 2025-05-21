@@ -24,7 +24,7 @@ export default function EditCourseForm({ course, onSuccess }: EditCourseFormProp
   const [isLoading, setIsLoading] = useState(false);
   
   const { t } = useLanguage();
-  const { user } = useAuth();
+  const { user, userDetails } = useAuth();
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -48,8 +48,29 @@ export default function EditCourseForm({ course, onSuccess }: EditCourseFormProp
       return;
     }
 
+    if (!userDetails || userDetails.role !== 'teacher') {
+      toast({
+        title: t('error'),
+        description: 'Apenas professores podem editar cursos.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Check if the logged-in teacher is the owner of this course
+    if (course.teacher_id !== user.id) {
+      toast({
+        title: t('error'),
+        description: 'Você não tem permissão para editar este curso.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
+      console.log('Updating course with ID:', course.id);
+      
       const { data, error } = await supabase
         .from('courses')
         .update({
@@ -61,6 +82,7 @@ export default function EditCourseForm({ course, onSuccess }: EditCourseFormProp
         .select();
 
       if (error) {
+        console.error('Supabase error:', error);
         throw error;
       }
 
