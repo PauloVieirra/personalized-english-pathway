@@ -1,7 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import CourseCard from './CourseCard';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -23,65 +22,30 @@ type Course = {
 export default function StudentCourseCarousel() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
-  const { userDetails } = useAuth();
   const { t } = useLanguage();
 
   useEffect(() => {
     const fetchCourses = async () => {
-      if (!userDetails?.id) return;
-      
       try {
-        // Buscar cursos atribuídos ao aluno através das lições atribuídas
-        const { data: studentLessons, error: lessonError } = await supabase
-          .from('student_lessons')
-          .select('lesson_id')
-          .eq('student_id', userDetails.id);
-
-        if (lessonError) throw lessonError;
-        
-        if (!studentLessons?.length) {
-          setLoading(false);
-          return;
-        }
-
-        const lessonIds = studentLessons.map(sl => sl.lesson_id);
-        
-        // Buscar informações dos cursos que contêm essas lições
-        const { data: courseLessons, error: courseError } = await supabase
-          .from('course_lessons')
-          .select('course_id')
-          .in('lesson_id', lessonIds);
-
-        if (courseError) throw courseError;
-        
-        if (!courseLessons?.length) {
-          setLoading(false);
-          return;
-        }
-
-        // Remover duplicatas
-        const uniqueCourseIds = [...new Set(courseLessons.map(cl => cl.course_id))];
-        
-        // Buscar detalhes dos cursos
-        const { data: coursesData, error: coursesError } = await supabase
+        // Fetch all available courses instead of only those assigned to the student
+        const { data, error } = await supabase
           .from('courses')
-          .select('id, title, description, image_url')
-          .in('id', uniqueCourseIds);
+          .select('id, title, description, image_url');
+          
+        if (error) throw error;
         
-        if (coursesError) throw coursesError;
-        
-        setCourses(coursesData || []);
+        setCourses(data || []);
       } catch (error) {
-        console.error('Erro ao buscar cursos:', error);
+        console.error('Error fetching courses:', error);
       } finally {
         setLoading(false);
       }
     };
 
     fetchCourses();
-  }, [userDetails]);
+  }, []);
 
-  // Renderizar esqueletos durante o carregamento
+  // Render skeletons during loading
   if (loading) {
     return (
       <div className="space-y-4">
@@ -97,7 +61,7 @@ export default function StudentCourseCarousel() {
     );
   }
 
-  // Se não houver cursos, mostrar mensagem
+  // If no courses, show message
   if (!courses.length) {
     return (
       <div className="space-y-4">

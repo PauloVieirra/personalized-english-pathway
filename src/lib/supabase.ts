@@ -9,6 +9,11 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     autoRefreshToken: true,
     storageKey: 'supabase.auth.token',
+  },
+  global: {
+    headers: {
+      'X-Client-Info': 'lovable-app'
+    }
   }
 });
 
