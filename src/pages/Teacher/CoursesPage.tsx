@@ -143,7 +143,7 @@ export default function CoursesPage() {
                 <DialogHeader>
                   <DialogTitle>Criar Novo Curso</DialogTitle>
                 </DialogHeader>
-                <CreateCourseForm onCourseCreated={handleCourseCreated} />
+                <CreateCourseForm onSuccess={handleCourseCreated} />
               </DialogContent>
             </Dialog>
           </div>
@@ -270,7 +270,6 @@ export default function CoursesPage() {
               {managingCourse && (
                 <ManageCourseLessonsForm 
                   course={managingCourse} 
-                  onClose={() => setManageLessonsOpen(false)}
                 />
               )}
             </DialogContent>

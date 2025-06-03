@@ -1,6 +1,5 @@
 
 import { supabase } from './supabase';
-import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Upload a file to Supabase Storage
@@ -13,9 +12,9 @@ export async function uploadFile(file: File, bucket: string, path?: string): Pro
   try {
     if (!file) return null;
     
-    // Generate a unique filename using UUID
+    // Generate a unique filename using crypto.randomUUID()
     const fileExt = file.name.split('.').pop();
-    const fileName = `${uuidv4()}.${fileExt}`;
+    const fileName = `${crypto.randomUUID()}.${fileExt}`;
     const filePath = path ? `${path}/${fileName}` : fileName;
     
     // Upload the file
@@ -42,6 +41,16 @@ export async function uploadFile(file: File, bucket: string, path?: string): Pro
     console.error('Upload error:', error);
     return null;
   }
+}
+
+/**
+ * Upload an image to Supabase Storage (specific for images)
+ * @param file The image file to upload
+ * @param bucket The bucket name to upload to
+ * @returns The URL of the uploaded image or null if upload failed
+ */
+export async function uploadImageToSupabase(file: File, bucket: string): Promise<string | null> {
+  return uploadFile(file, bucket, 'images');
 }
 
 /**
