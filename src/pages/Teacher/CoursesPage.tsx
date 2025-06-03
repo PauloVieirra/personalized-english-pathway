@@ -17,7 +17,6 @@ import EditCourseForm from '@/components/teacher/EditCourseForm';
 import ManageCourseLessonsForm from '@/components/teacher/ManageCourseLessonsForm';
 import { X } from 'lucide-react';
 import { Database } from '@/integrations/supabase/types';
-import { Avatar } from '@/components/ui/avatar';
 
 // Define o tipo Course usando o tipo do Supabase
 type Course = Database['public']['Tables']['courses']['Row'];
@@ -163,6 +162,7 @@ export default function CoursesPage() {
                     <TableRow>
                       <TableHead>Imagem</TableHead>
                       <TableHead>Título</TableHead>
+                      <TableHead>Preço</TableHead>
                       <TableHead>Data de Criação</TableHead>
                       <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
@@ -185,7 +185,21 @@ export default function CoursesPage() {
                             )}
                           </div>
                         </TableCell>
-                        <TableCell className="font-medium">{course.title}</TableCell>
+                        <TableCell>
+                          <div className="flex justify-between items-center">
+                            <span className="font-medium">{course.title}</span>
+                            {course.is_free && (
+                              <span className="text-green-600 font-semibold text-sm">Grátis</span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {course.is_free ? (
+                            <span className="text-green-600">Gratuito</span>
+                          ) : (
+                            <span className="font-semibold">R$ {course.price?.toFixed(2)}</span>
+                          )}
+                        </TableCell>
                         <TableCell>
                           {new Date(course.created_at).toLocaleDateString()}
                         </TableCell>

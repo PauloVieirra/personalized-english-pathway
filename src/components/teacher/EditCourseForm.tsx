@@ -1,9 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -22,6 +22,8 @@ interface EditCourseFormProps {
 export default function EditCourseForm({ course, onSuccess }: EditCourseFormProps) {
   const [title, setTitle] = useState(course.title);
   const [description, setDescription] = useState(course.description || '');
+  const [isFree, setIsFree] = useState(course.is_free ?? true);
+  const [price, setPrice] = useState(course.price ? course.price.toString() : '');
   const [isLoading, setIsLoading] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(course.image_url || null);
@@ -119,6 +121,15 @@ export default function EditCourseForm({ course, onSuccess }: EditCourseFormProp
       });
       return;
     }
+
+    if (!isFree && (!price || parseFloat(price) <= 0)) {
+      toast({
+        title: t('error'),
+        description: 'Por favor, informe um preço válido para o curso pago.',
+        variant: 'destructive',
+      });
+      return;
+    }
     
     if (!user) {
       toast({
@@ -170,6 +181,8 @@ export default function EditCourseForm({ course, onSuccess }: EditCourseFormProp
           title,
           description: description || null,
           image_url: imageUrl,
+          is_free: isFree,
+          price: isFree ? null : parseFloat(price),
           updated_at: new Date().toISOString(),
         })
         .eq('id', course.id)
@@ -231,6 +244,39 @@ export default function EditCourseForm({ course, onSuccess }: EditCourseFormProp
               className="form-input min-h-[100px]"
             />
           </div>
+
+          <div className="space-y-3">
+            <Label>Tipo de Curso</Label>
+            <RadioGroup
+              value={isFree ? "free" : "paid"}
+              onValueChange={(value) => setIsFree(value === "free")}
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="free" id="free" />
+                <Label htmlFor="free">Curso Gratuito</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="paid" id="paid" />
+                <Label htmlFor="paid">Curso Pago</Label>
+              </div>
+            </RadioGroup>
+          </div>
+
+          {!isFree && (
+            <div className="space-y-2">
+              <Label htmlFor="price">Preço (R$) <span className="text-red-500">*</span></Label>
+              <Input
+                id="price"
+                type="number"
+                step="0.01"
+                min="0"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                placeholder="0,00"
+                className="form-input"
+              />
+            </div>
+          )}
           
           <div className="space-y-2">
             <Label htmlFor="image">Imagem do Curso</Label>
