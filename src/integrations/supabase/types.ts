@@ -54,6 +54,8 @@ export type Database = {
           description: string | null
           id: string
           image_url: string | null
+          is_free: boolean | null
+          price: number | null
           teacher_id: string
           title: string
           updated_at: string
@@ -63,6 +65,8 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          is_free?: boolean | null
+          price?: number | null
           teacher_id: string
           title: string
           updated_at?: string
@@ -72,6 +76,8 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          is_free?: boolean | null
+          price?: number | null
           teacher_id?: string
           title?: string
           updated_at?: string

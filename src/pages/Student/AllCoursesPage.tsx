@@ -6,30 +6,30 @@ import StudentSidebar from '@/components/student/StudentSidebar';
 import { useLanguage } from '@/context/LanguageContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import CourseCard from '@/components/student/CourseCard';
-import { Button } from '@/components/ui/button';
-import { toast } from '@/components/ui/use-toast';
-import { useAuth } from '@/context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 type Course = {
   id: string;
   title: string;
   description: string | null;
   image_url: string | null;
+  is_free: boolean | null;
+  price: number | null;
 };
 
 export default function AllCoursesPage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const { t } = useLanguage();
-  const { userDetails } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        // Buscar todos os cursos disponíveis
+        // Buscar todos os cursos disponíveis com informações de preço
         const { data, error } = await supabase
           .from('courses')
-          .select('id, title, description, image_url');
+          .select('id, title, description, image_url, is_free, price');
           
         if (error) throw error;
         
@@ -44,22 +44,8 @@ export default function AllCoursesPage() {
     fetchCourses();
   }, []);
 
-  const handleEnrollCourse = async (courseId: string) => {
-    if (!userDetails?.id) {
-      toast({
-        title: "Erro",
-        description: "Você precisa estar logado para se inscrever em um curso",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Aqui seria implementada a lógica para associar o aluno ao curso
-    // Por exemplo, adicionando registros na tabela student_lessons para cada aula do curso
-    toast({
-      title: "Funcionalidade em desenvolvimento",
-      description: "A inscrição em cursos será implementada em breve!",
-    });
+  const handleCourseClick = (courseId: string) => {
+    navigate(`/student/course/${courseId}`);
   };
 
   return (
@@ -86,20 +72,12 @@ export default function AllCoursesPage() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {courses.map((course) => (
-                <div key={course.id} className="flex flex-col">
-                  <CourseCard
-                    title={course.title}
-                    imageUrl={course.image_url}
-                  />
-                  <div className="mt-2">
-                    <Button 
-                      className="w-full" 
-                      onClick={() => handleEnrollCourse(course.id)}
-                    >
-                      Inscrever-se
-                    </Button>
-                  </div>
-                </div>
+                <CourseCard
+                  key={course.id}
+                  title={course.title}
+                  imageUrl={course.image_url}
+                  onClick={() => handleCourseClick(course.id)}
+                />
               ))}
             </div>
           )}

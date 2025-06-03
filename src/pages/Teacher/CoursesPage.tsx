@@ -1,132 +1,128 @@
-
 import React, { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
 import MainLayout from '@/components/layout/MainLayout';
 import TeacherSidebar from '@/components/teacher/TeacherSidebar';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/components/ui/use-toast';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { PlusCircle, Edit, Trash, FileText, Image as ImageIcon } from 'lucide-react';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from '@/components/ui/sheet';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import CreateCourseForm from '@/components/teacher/CreateCourseForm';
 import EditCourseForm from '@/components/teacher/EditCourseForm';
 import ManageCourseLessonsForm from '@/components/teacher/ManageCourseLessonsForm';
-import { X } from 'lucide-react';
-import { Database } from '@/integrations/supabase/types';
+import { Plus, Edit, Layers, Trash2 } from 'lucide-react';
+import { toast } from '@/components/ui/use-toast';
 
-// Define o tipo Course usando o tipo do Supabase
-type Course = Database['public']['Tables']['courses']['Row'];
+type Course = {
+  id: string;
+  title: string;
+  description: string | null;
+  image_url: string | null;
+  created_at: string;
+  updated_at: string;
+  teacher_id: string;
+  is_free: boolean | null;
+  price: number | null;
+};
 
 export default function CoursesPage() {
-  const { t } = useLanguage();
-  const { user } = useAuth();
-  const { toast } = useToast();
-  
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
-  const [openCreateSheet, setOpenCreateSheet] = useState(false);
-  const [openEditSheet, setOpenEditSheet] = useState(false);
-  const [openManageLessonsSheet, setOpenManageLessonsSheet] = useState(false);
-  const [currentCourse, setCurrentCourse] = useState<Course | null>(null);
+  const [editingCourse, setEditingCourse] = useState<Course | null>(null);
+  const [managingCourse, setManagingCourse] = useState<Course | null>(null);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [manageLessonsOpen, setManageLessonsOpen] = useState(false);
+  const { t } = useLanguage();
+  const { userDetails } = useAuth();
 
-  const loadCourses = async () => {
-    if (!user) return;
+  const fetchCourses = async () => {
+    if (!userDetails?.id) return;
     
-    setLoading(true);
     try {
       const { data, error } = await supabase
         .from('courses')
         .select('*')
-        .eq('teacher_id', user.id)
+        .eq('teacher_id', userDetails.id)
         .order('created_at', { ascending: false });
-
+        
       if (error) throw error;
+      
       setCourses(data || []);
-    } catch (error: any) {
-      console.error('Erro ao carregar cursos:', error.message);
-      toast({
-        title: t('error'),
-        description: error.message,
-        variant: 'destructive',
-      });
+    } catch (error) {
+      console.error('Erro ao buscar cursos:', error);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadCourses();
-  }, [user]);
+    fetchCourses();
+  }, [userDetails]);
 
-  const handleCreateSuccess = () => {
-    setOpenCreateSheet(false);
-    loadCourses();
-    toast({
-      title: t('success'),
-      description: 'Curso criado com sucesso!',
-    });
+  const handleCourseCreated = () => {
+    setCreateDialogOpen(false);
+    fetchCourses();
   };
 
-  const handleEditSuccess = () => {
-    setOpenEditSheet(false);
-    setCurrentCourse(null);
-    loadCourses();
-    toast({
-      title: t('success'),
-      description: 'Curso atualizado com sucesso!',
-    });
-  };
-
-  const handleManageLessonsSuccess = () => {
-    setOpenManageLessonsSheet(false);
-    loadCourses();
-    toast({
-      title: t('success'),
-      description: 'Aulas do curso atualizadas com sucesso!',
-    });
+  const handleCourseUpdated = () => {
+    setEditDialogOpen(false);
+    setEditingCourse(null);
+    fetchCourses();
   };
 
   const handleEditCourse = (course: Course) => {
-    setCurrentCourse(course);
-    setOpenEditSheet(true);
+    setEditingCourse(course);
+    setEditDialogOpen(true);
   };
 
   const handleManageLessons = (course: Course) => {
-    setCurrentCourse(course);
-    setOpenManageLessonsSheet(true);
+    setManagingCourse(course);
+    setManageLessonsOpen(true);
   };
 
   const handleDeleteCourse = async (courseId: string) => {
-    if (!confirm('Tem certeza que deseja excluir este curso?')) {
-      return;
-    }
+    if (!confirm('Tem certeza que deseja excluir este curso?')) return;
 
     try {
       const { error } = await supabase
         .from('courses')
         .delete()
         .eq('id', courseId);
-
+        
       if (error) throw error;
-
-      setCourses(prev => prev.filter(course => course.id !== courseId));
-
+      
       toast({
-        title: t('success'),
-        description: 'Curso excluído com sucesso.',
+        title: 'Sucesso',
+        description: 'Curso excluído com sucesso!'
       });
-    } catch (error: any) {
-      console.error('Erro ao excluir curso:', error.message);
+      
+      fetchCourses();
+    } catch (error) {
+      console.error('Erro ao excluir curso:', error);
       toast({
-        title: t('error'),
-        description: error.message,
-        variant: 'destructive',
+        title: 'Erro',
+        description: 'Erro ao excluir o curso',
+        variant: 'destructive'
       });
     }
+  };
+
+  const formatPrice = (course: Course) => {
+    if (course.is_free) {
+      return 'Grátis';
+    }
+    
+    if (course.price !== null) {
+      return new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL'
+      }).format(course.price);
+    }
+    
+    return '-';
   };
 
   return (
@@ -135,102 +131,108 @@ export default function CoursesPage() {
         <TeacherSidebar />
         <div className="flex-1 p-8">
           <div className="flex justify-between items-center mb-8">
-            <h1 className="text-3xl font-bold">Cursos</h1>
-            <Button className="btn-primary" onClick={() => setOpenCreateSheet(true)}>
-              <PlusCircle className="w-4 h-4 mr-2" />
-              Criar Curso
-            </Button>
+            <h1 className="text-3xl font-bold">Meus Cursos</h1>
+            <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Novo Curso
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Criar Novo Curso</DialogTitle>
+                </DialogHeader>
+                <CreateCourseForm onCourseCreated={handleCourseCreated} />
+              </DialogContent>
+            </Dialog>
           </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Meus Cursos</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="text-center py-4">{t('loading')}</div>
-              ) : courses.length === 0 ? (
-                <div className="text-center py-8">
-                  <p className="text-gray-500 mb-4">Você ainda não criou nenhum curso.</p>
-                  <Button onClick={() => setOpenCreateSheet(true)}>
-                    Criar Curso
-                  </Button>
-                </div>
-              ) : (
+          {loading ? (
+            <div className="space-y-6">
+              {Array(5).fill(0).map((_, index) => (
+                <Card key={index}>
+                  <CardHeader>
+                    <Skeleton className="h-6 w-3/4" />
+                    <Skeleton className="h-4 w-1/2" />
+                  </CardHeader>
+                </Card>
+              ))}
+            </div>
+          ) : courses.length === 0 ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Nenhum curso encontrado</CardTitle>
+                <CardDescription>
+                  Você ainda não criou nenhum curso. Clique em "Novo Curso" para começar.
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>Lista de Cursos</CardTitle>
+                <CardDescription>
+                  Gerencie seus cursos aqui
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Imagem</TableHead>
                       <TableHead>Título</TableHead>
+                      <TableHead>Descrição</TableHead>
                       <TableHead>Preço</TableHead>
-                      <TableHead>Data de Criação</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
+                      <TableHead>Criado em</TableHead>
+                      <TableHead>Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {courses.map(course => (
+                    {courses.map((course) => (
                       <TableRow key={course.id}>
-                        <TableCell>
-                          <div className="h-12 w-16 relative overflow-hidden rounded-md">
-                            {course.image_url ? (
-                              <img 
-                                src={course.image_url} 
-                                alt={course.title} 
-                                className="h-full w-full object-cover"
-                              />
-                            ) : (
-                              <div className="h-full w-full bg-gray-100 flex items-center justify-center">
-                                <ImageIcon className="h-6 w-6 text-gray-400" />
-                              </div>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex justify-between items-center">
-                            <span className="font-medium">{course.title}</span>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center space-x-2">
+                            <span>{course.title}</span>
                             {course.is_free && (
-                              <span className="text-green-600 font-semibold text-sm">Grátis</span>
+                              <span className="text-green-600 font-medium text-sm">Grátis</span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="max-w-xs truncate">
+                          {course.description || 'Sem descrição'}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex justify-end">
+                            {!course.is_free && course.price && (
+                              <span className="font-medium">{formatPrice(course)}</span>
                             )}
                           </div>
                         </TableCell>
                         <TableCell>
-                          {course.is_free ? (
-                            <span className="text-green-600">Gratuito</span>
-                          ) : (
-                            <span className="font-semibold">R$ {course.price?.toFixed(2)}</span>
-                          )}
+                          {new Date(course.created_at).toLocaleDateString('pt-BR')}
                         </TableCell>
                         <TableCell>
-                          {new Date(course.created_at).toLocaleDateString()}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end space-x-2">
-                            <Button 
-                              size="sm" 
+                          <div className="flex space-x-2">
+                            <Button
                               variant="outline"
-                              className="flex items-center gap-1"
+                              size="sm"
                               onClick={() => handleEditCourse(course)}
                             >
-                              <Edit className="h-3.5 w-3.5" />
-                              <span className="sr-only">Editar</span>
+                              <Edit className="h-4 w-4" />
                             </Button>
-                            <Button 
-                              size="sm" 
+                            <Button
                               variant="outline"
-                              className="flex items-center gap-1 text-brand-blue"
+                              size="sm"
                               onClick={() => handleManageLessons(course)}
                             >
-                              <FileText className="h-3.5 w-3.5" />
-                              <span className="sr-only">Gerenciar Aulas</span>
+                              <Layers className="h-4 w-4" />
                             </Button>
-                            <Button 
-                              size="sm" 
+                            <Button
                               variant="outline"
-                              className="flex items-center gap-1 text-red-500"
+                              size="sm"
                               onClick={() => handleDeleteCourse(course.id)}
                             >
-                              <Trash className="h-3.5 w-3.5" />
-                              <span className="sr-only">Excluir</span>
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
                         </TableCell>
@@ -238,85 +240,41 @@ export default function CoursesPage() {
                     ))}
                   </TableBody>
                 </Table>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Edit Course Dialog */}
+          <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Editar Curso</DialogTitle>
+              </DialogHeader>
+              {editingCourse && (
+                <EditCourseForm 
+                  course={editingCourse} 
+                  onCourseUpdated={handleCourseUpdated} 
+                />
               )}
-            </CardContent>
-          </Card>
+            </DialogContent>
+          </Dialog>
 
-          {/* Sheet para criar cursos */}
-          <Sheet open={openCreateSheet} onOpenChange={setOpenCreateSheet}>
-            <SheetContent side="right" className="w-full sm:max-w-full p-0 border-none">
-              <div className="flex flex-col h-screen">
-                <SheetHeader className="bg-gray-100 p-6 flex flex-row items-center justify-between">
-                  <SheetTitle className="text-2xl">Criar Curso</SheetTitle>
-                  <SheetClose asChild>
-                    <Button variant="ghost" size="icon">
-                      <X className="h-5 w-5" />
-                    </Button>
-                  </SheetClose>
-                </SheetHeader>
-                
-                <ScrollArea className="flex-1 p-6">
-                  <div className="max-w-3xl mx-auto">
-                    <CreateCourseForm onSuccess={handleCreateSuccess} />
-                  </div>
-                </ScrollArea>
-              </div>
-            </SheetContent>
-          </Sheet>
-
-          {/* Sheet para editar cursos */}
-          <Sheet open={openEditSheet} onOpenChange={setOpenEditSheet}>
-            <SheetContent side="right" className="w-full sm:max-w-full p-0 border-none">
-              <div className="flex flex-col h-screen">
-                <SheetHeader className="bg-gray-100 p-6 flex flex-row items-center justify-between">
-                  <SheetTitle className="text-2xl">Editar Curso</SheetTitle>
-                  <SheetClose asChild>
-                    <Button variant="ghost" size="icon">
-                      <X className="h-5 w-5" />
-                    </Button>
-                  </SheetClose>
-                </SheetHeader>
-                
-                <ScrollArea className="flex-1 p-6">
-                  <div className="max-w-3xl mx-auto">
-                    {currentCourse && (
-                      <EditCourseForm 
-                        course={currentCourse} 
-                        onSuccess={handleEditSuccess} 
-                      />
-                    )}
-                  </div>
-                </ScrollArea>
-              </div>
-            </SheetContent>
-          </Sheet>
-
-          {/* Sheet para gerenciar aulas do curso */}
-          <Sheet open={openManageLessonsSheet} onOpenChange={setOpenManageLessonsSheet}>
-            <SheetContent side="right" className="w-full sm:max-w-full p-0 border-none">
-              <div className="flex flex-col h-screen">
-                <SheetHeader className="bg-gray-100 p-6 flex flex-row items-center justify-between">
-                  <SheetTitle className="text-2xl">Gerenciar Aulas do Curso</SheetTitle>
-                  <SheetClose asChild>
-                    <Button variant="ghost" size="icon">
-                      <X className="h-5 w-5" />
-                    </Button>
-                  </SheetClose>
-                </SheetHeader>
-                
-                <ScrollArea className="flex-1 p-6">
-                  <div className="max-w-3xl mx-auto">
-                    {currentCourse && (
-                      <ManageCourseLessonsForm
-                        course={currentCourse}
-                        onSuccess={handleManageLessonsSuccess}
-                      />
-                    )}
-                  </div>
-                </ScrollArea>
-              </div>
-            </SheetContent>
-          </Sheet>
+          {/* Manage Course Lessons Dialog */}
+          <Dialog open={manageLessonsOpen} onOpenChange={setManageLessonsOpen}>
+            <DialogContent className="max-w-4xl">
+              <DialogHeader>
+                <DialogTitle>
+                  Gerenciar Aulas: {managingCourse?.title}
+                </DialogTitle>
+              </DialogHeader>
+              {managingCourse && (
+                <ManageCourseLessonsForm 
+                  course={managingCourse} 
+                  onClose={() => setManageLessonsOpen(false)}
+                />
+              )}
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
     </MainLayout>

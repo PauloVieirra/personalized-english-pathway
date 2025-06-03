@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -18,6 +19,7 @@ import StudentsPage from "./pages/Teacher/StudentsPage";
 import StudentDashboard from "./pages/Student/StudentDashboard";
 import StudentLessonsPage from "./pages/Student/StudentLessonsPage";
 import AllCoursesPage from "./pages/Student/AllCoursesPage";
+import CourseDetailPage from "./pages/Student/CourseDetailPage";
 import RankingPage from "./pages/Student/RankingPage";
 import NotFound from "./pages/NotFound";
 
@@ -63,6 +65,7 @@ const App = () => {
                     <Route path="/student/dashboard" element={<StudentDashboard />} />
                     <Route path="/student/lessons" element={<StudentLessonsPage />} />
                     <Route path="/student/courses" element={<AllCoursesPage />} />
+                    <Route path="/student/course/:courseId" element={<CourseDetailPage />} />
                     <Route path="/student/ranking" element={<RankingPage />} />
                     
                     {/* Catch-all route for 404 */}

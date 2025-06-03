@@ -1,339 +1,175 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState } from 'react';
+import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { useLanguage } from '@/context/LanguageContext';
-import { useAuth } from '@/context/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/components/ui/use-toast';
-import { Card, CardContent } from '@/components/ui/card';
-import { Database } from '@/integrations/supabase/types';
-import { Upload, ImageIcon, Loader2 } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { toast } from '@/components/ui/use-toast';
+import { uploadImageToSupabase } from '@/lib/uploadHelpers';
 
-type Course = Database['public']['Tables']['courses']['Row'];
+interface Course {
+  id: string;
+  title: string;
+  description: string | null;
+  image_url: string | null;
+  is_free: boolean | null;
+  price: number | null;
+}
 
 interface EditCourseFormProps {
   course: Course;
-  onSuccess?: () => void;
+  onCourseUpdated: () => void;
 }
 
-export default function EditCourseForm({ course, onSuccess }: EditCourseFormProps) {
+export default function EditCourseForm({ course, onCourseUpdated }: EditCourseFormProps) {
   const [title, setTitle] = useState(course.title);
   const [description, setDescription] = useState(course.description || '');
   const [isFree, setIsFree] = useState(course.is_free ?? true);
   const [price, setPrice] = useState(course.price ? course.price.toString() : '');
-  const [isLoading, setIsLoading] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(course.image_url || null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [imageChanged, setImageChanged] = useState(false);
-  
-  const { t } = useLanguage();
-  const { user, userDetails } = useAuth();
-  const { toast } = useToast();
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      
-      // Validar tipo de arquivo
-      if (!file.type.startsWith('image/')) {
-        toast({
-          title: t('error'),
-          description: 'Por favor, selecione apenas arquivos de imagem.',
-          variant: 'destructive',
-        });
-        return;
-      }
-      
-      // Validar tamanho (máximo 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        toast({
-          title: t('error'),
-          description: 'O arquivo é muito grande. O tamanho máximo permitido é 5MB.',
-          variant: 'destructive',
-        });
-        return;
-      }
-      
-      setImageFile(file);
-      setImageChanged(true);
-      
-      // Criar preview da imagem
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const uploadImage = async (): Promise<string | null> => {
-    if (!imageFile || !user) return null;
-    
-    setIsUploading(true);
-    try {
-      // Criar um nome de arquivo único usando timestamp e id do usuário
-      const fileExt = imageFile.name.split('.').pop();
-      const fileName = `${Date.now()}-${user.id}.${fileExt}`;
-      const filePath = `courses/${fileName}`;
-      
-      // Upload da imagem para o bucket do Supabase
-      const { error: uploadError } = await supabase
-        .storage
-        .from('imagescurse')
-        .upload(filePath, imageFile);
-      
-      if (uploadError) {
-        throw uploadError;
-      }
-      
-      // Obter a URL pública da imagem
-      const { data: urlData } = supabase
-        .storage
-        .from('imagescurse')
-        .getPublicUrl(filePath);
-      
-      return urlData.publicUrl;
-    } catch (error: any) {
-      console.error('Erro ao fazer upload da imagem:', error.message);
-      toast({
-        title: t('error'),
-        description: `Erro ao fazer upload da imagem: ${error.message}`,
-        variant: 'destructive',
-      });
-      return null;
-    } finally {
-      setIsUploading(false);
-    }
-  };
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!title.trim()) {
       toast({
-        title: t('error'),
-        description: 'Por favor, preencha o título do curso.',
-        variant: 'destructive',
+        title: "Erro",
+        description: "O título é obrigatório",
+        variant: "destructive"
       });
       return;
     }
 
     if (!isFree && (!price || parseFloat(price) <= 0)) {
       toast({
-        title: t('error'),
-        description: 'Por favor, informe um preço válido para o curso pago.',
-        variant: 'destructive',
-      });
-      return;
-    }
-    
-    if (!user) {
-      toast({
-        title: t('error'),
-        description: 'Você precisa estar logado para atualizar um curso.',
-        variant: 'destructive',
+        title: "Erro",
+        description: "Para cursos pagos, o preço deve ser maior que zero",
+        variant: "destructive"
       });
       return;
     }
 
-    if (!userDetails || userDetails.role !== 'teacher') {
-      toast({
-        title: t('error'),
-        description: 'Apenas professores podem editar cursos.',
-        variant: 'destructive',
-      });
-      return;
-    }
+    setLoading(true);
 
-    // Check if the logged-in teacher is the owner of this course
-    if (course.teacher_id !== user.id) {
-      toast({
-        title: t('error'),
-        description: 'Você não tem permissão para editar este curso.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setIsLoading(true);
     try {
-      // Processar upload da imagem se uma nova foi selecionada
       let imageUrl = course.image_url;
-      
-      if (imageChanged) {
-        // Se a imagem foi removida, definir como null
-        if (!imageFile) {
-          imageUrl = null;
-        } 
-        // Se uma nova imagem foi selecionada, fazer upload
-        else {
-          imageUrl = await uploadImage();
-        }
+
+      // Upload da nova imagem se foi selecionada
+      if (imageFile) {
+        imageUrl = await uploadImageToSupabase(imageFile, 'courses');
       }
-      
-      const { data, error } = await supabase
+
+      const updateData = {
+        title: title.trim(),
+        description: description.trim() || null,
+        image_url: imageUrl,
+        is_free: isFree,
+        price: isFree ? null : parseFloat(price),
+        updated_at: new Date().toISOString()
+      };
+
+      const { error } = await supabase
         .from('courses')
-        .update({
-          title,
-          description: description || null,
-          image_url: imageUrl,
-          is_free: isFree,
-          price: isFree ? null : parseFloat(price),
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', course.id)
-        .select();
+        .update(updateData)
+        .eq('id', course.id);
 
-      if (error) {
-        console.error('Supabase error:', error);
-        throw error;
-      }
+      if (error) throw error;
 
       toast({
-        title: t('success'),
-        description: 'Curso atualizado com sucesso!',
+        title: "Sucesso",
+        description: "Curso atualizado com sucesso!"
       });
-      
-      // Trigger success callback
-      if (onSuccess) {
-        onSuccess();
-      }
-    } catch (error: any) {
-      console.error('Erro ao atualizar curso:', error.message);
+
+      onCourseUpdated();
+    } catch (error) {
+      console.error('Erro ao atualizar curso:', error);
       toast({
-        title: t('error'),
-        description: error.message,
-        variant: 'destructive',
+        title: "Erro",
+        description: "Erro ao atualizar o curso",
+        variant: "destructive"
       });
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
-  };
-
-  const removeImage = () => {
-    setImageFile(null);
-    setImagePreview(null);
-    setImageChanged(true);
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <Card>
-        <CardContent className="space-y-4 pt-6">
+      <div className="space-y-2">
+        <Label htmlFor="title">Título do Curso *</Label>
+        <Input
+          id="title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Digite o título do curso"
+          required
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="description">Descrição</Label>
+        <Textarea
+          id="description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Digite a descrição do curso"
+          rows={4}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="image">Imagem do Curso</Label>
+        <Input
+          id="image"
+          type="file"
+          accept="image/*"
+          onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+        />
+        {course.image_url && !imageFile && (
+          <div className="mt-2">
+            <img
+              src={course.image_url}
+              alt="Imagem atual do curso"
+              className="w-32 h-20 object-cover rounded"
+            />
+            <p className="text-sm text-muted-foreground mt-1">Imagem atual</p>
+          </div>
+        )}
+      </div>
+
+      <div className="space-y-4">
+        <div className="flex items-center space-x-2">
+          <Switch
+            id="is_free"
+            checked={isFree}
+            onCheckedChange={setIsFree}
+          />
+          <Label htmlFor="is_free">Curso gratuito</Label>
+        </div>
+
+        {!isFree && (
           <div className="space-y-2">
-            <Label htmlFor="title">Título do Curso <span className="text-red-500">*</span></Label>
+            <Label htmlFor="price">Preço (R$) *</Label>
             <Input
-              id="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              required
-              className="form-input"
+              id="price"
+              type="number"
+              min="0.01"
+              step="0.01"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              placeholder="0,00"
+              required={!isFree}
             />
           </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="description">Descrição</Label>
-            <Textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="form-input min-h-[100px]"
-            />
-          </div>
+        )}
+      </div>
 
-          <div className="space-y-3">
-            <Label>Tipo de Curso</Label>
-            <RadioGroup
-              value={isFree ? "free" : "paid"}
-              onValueChange={(value) => setIsFree(value === "free")}
-            >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="free" id="free" />
-                <Label htmlFor="free">Curso Gratuito</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="paid" id="paid" />
-                <Label htmlFor="paid">Curso Pago</Label>
-              </div>
-            </RadioGroup>
-          </div>
-
-          {!isFree && (
-            <div className="space-y-2">
-              <Label htmlFor="price">Preço (R$) <span className="text-red-500">*</span></Label>
-              <Input
-                id="price"
-                type="number"
-                step="0.01"
-                min="0"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                placeholder="0,00"
-                className="form-input"
-              />
-            </div>
-          )}
-          
-          <div className="space-y-2">
-            <Label htmlFor="image">Imagem do Curso</Label>
-            <div className="border-2 border-dashed border-gray-300 rounded-md p-4">
-              {imagePreview ? (
-                <div className="space-y-2">
-                  <div className="relative aspect-video w-full overflow-hidden rounded-md">
-                    <img 
-                      src={imagePreview} 
-                      alt="Preview da imagem" 
-                      className="object-cover w-full h-full"
-                    />
-                  </div>
-                  <Button 
-                    type="button"
-                    variant="destructive" 
-                    size="sm"
-                    onClick={removeImage}
-                    className="mt-2"
-                  >
-                    Remover imagem
-                  </Button>
-                </div>
-              ) : (
-                <label className="flex flex-col items-center justify-center h-40 cursor-pointer">
-                  <ImageIcon className="h-12 w-12 text-gray-400 mb-2" />
-                  <span className="text-sm text-gray-500">Clique para selecionar uma imagem</span>
-                  <span className="text-xs text-gray-400 mt-1">(PNG, JPG, GIF até 5MB)</span>
-                  <Input
-                    id="image"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    className="hidden"
-                  />
-                </label>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-      
-      <div className="flex justify-end">
-        <Button 
-          type="submit" 
-          className="w-full md:w-auto" 
-          disabled={isLoading || isUploading}
-          size="lg"
-        >
-          {isLoading || isUploading ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              {isUploading ? 'Enviando imagem...' : t('loading')}
-            </>
-          ) : (
-            'Salvar Alterações'
-          )}
+      <div className="flex justify-end space-x-2">
+        <Button type="submit" disabled={loading}>
+          {loading ? 'Atualizando...' : 'Atualizar Curso'}
         </Button>
       </div>
     </form>
