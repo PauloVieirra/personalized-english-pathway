@@ -4,7 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { AccessibilityProvider } from "@/context/AccessibilityContext";
@@ -26,19 +26,6 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 const App = () => {
-  // Get the last visited route from localStorage on initial load
-  const lastRoute = localStorage.getItem('lastRoute') || '/';
-
-  // Update localStorage whenever the route changes
-  React.useEffect(() => {
-    const handleRouteChange = () => {
-      localStorage.setItem('lastRoute', window.location.pathname);
-    };
-
-    window.addEventListener('popstate', handleRouteChange);
-    return () => window.removeEventListener('popstate', handleRouteChange);
-  }, []);
-
   return (
     <React.StrictMode>
       <BrowserRouter>
@@ -50,8 +37,7 @@ const App = () => {
                   <Toaster />
                   <Sonner />
                   <Routes>
-                    {/* Redirect to last visited route on initial load */}
-                    <Route path="/" element={lastRoute !== '/' ? <Navigate to={lastRoute} /> : <Index />} />
+                    <Route path="/" element={<Index />} />
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/register" element={<RegisterPage />} />
                     
