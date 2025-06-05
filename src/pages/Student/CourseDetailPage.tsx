@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import MainLayout from '@/components/layout/MainLayout';
 import StudentSidebar from '@/components/student/StudentSidebar';
+import PaymentModal from '@/components/student/PaymentModal';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -38,6 +39,8 @@ export default function CourseDetailPage() {
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [loading, setLoading] = useState(true);
   const [enrolling, setEnrolling] = useState(false);
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [hasPurchased, setHasPurchased] = useState(false);
 
   useEffect(() => {
     const fetchCourseDetails = async () => {
@@ -54,6 +57,19 @@ export default function CourseDetailPage() {
         if (courseError) throw courseError;
 
         setCourse(courseData);
+
+        // Verificar se o usuário já comprou o curso
+        if (userDetails?.id) {
+          const { data: purchaseData } = await supabase
+            .from('course_purchases')
+            .select('*')
+            .eq('student_id', userDetails.id)
+            .eq('course_id', courseId)
+            .eq('status', 'completed')
+            .single();
+
+          setHasPurchased(!!purchaseData);
+        }
 
         // Buscar aulas do curso
         const { data: lessonsData, error: lessonsError } = await supabase
@@ -88,7 +104,7 @@ export default function CourseDetailPage() {
     };
 
     fetchCourseDetails();
-  }, [courseId]);
+  }, [courseId, userDetails]);
 
   const handleEnrollCourse = async () => {
     if (!userDetails?.id || !course) {
@@ -100,23 +116,76 @@ export default function CourseDetailPage() {
       return;
     }
 
-    setEnrolling(true);
+    // Se o curso é gratuito, inscrever diretamente
+    if (course.is_free) {
+      setEnrolling(true);
+      try {
+        const { error } = await supabase
+          .from('course_purchases')
+          .insert({
+            student_id: userDetails.id,
+            course_id: course.id,
+            amount: 0,
+            payment_method: 'free',
+            status: 'completed'
+          });
+
+        if (error) throw error;
+
+        setHasPurchased(true);
+        toast({
+          title: "Sucesso!",
+          description: "Você foi inscrito no curso gratuito com sucesso!",
+        });
+      } catch (error) {
+        console.error('Erro ao se inscrever no curso gratuito:', error);
+        toast({
+          title: "Erro",
+          description: "Erro ao se inscrever no curso",
+          variant: "destructive"
+        });
+      } finally {
+        setEnrolling(false);
+      }
+    } else {
+      // Se o curso é pago, abrir modal de pagamento
+      setPaymentModalOpen(true);
+    }
+  };
+
+  const handlePaymentSuccess = async () => {
+    if (!userDetails?.id || !course) return;
 
     try {
-      // Por enquanto, apenas mostrar uma mensagem de funcionalidade em desenvolvimento
+      const { error } = await supabase
+        .from('course_purchases')
+        .insert({
+          student_id: userDetails.id,
+          course_id: course.id,
+          amount: course.price || 0,
+          payment_method: 'card', // Será atualizado pelo modal
+          status: 'completed'
+        });
+
+      if (error) throw error;
+
+      setHasPurchased(true);
       toast({
-        title: "Funcionalidade em desenvolvimento",
-        description: "A inscrição em cursos será implementada em breve!",
+        title: "Curso adquirido!",
+        description: "Você agora tem acesso ao curso. Aproveite seus estudos!",
       });
+      
+      // Navegar para a área do aluno após 2 segundos
+      setTimeout(() => {
+        navigate('/student/dashboard');
+      }, 2000);
     } catch (error) {
-      console.error('Erro ao se inscrever no curso:', error);
+      console.error('Erro ao registrar compra:', error);
       toast({
         title: "Erro",
-        description: "Erro ao se inscrever no curso",
+        description: "Erro ao registrar a compra do curso",
         variant: "destructive"
       });
-    } finally {
-      setEnrolling(false);
     }
   };
 
@@ -173,6 +242,14 @@ export default function CourseDetailPage() {
       </MainLayout>
     );
   }
+
+  const formatPrice = (price: number | null) => {
+    if (price === null) return '';
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(price);
+  };
 
   return (
     <MainLayout requireAuth allowedRoles={['student']}>
@@ -257,22 +334,39 @@ export default function CourseDetailPage() {
             <div>
               <Card>
                 <CardHeader>
-                  <CardTitle>Inscrever-se no curso</CardTitle>
+                  <CardTitle>
+                    {hasPurchased ? 'Curso Adquirido' : 'Inscrever-se no curso'}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-primary mb-2">
-                      {course.is_free ? 'Grátis' : formatPrice(course.price)}
+                  {hasPurchased ? (
+                    <div className="text-center">
+                      <div className="text-green-600 font-medium mb-4">
+                        ✓ Você já possui este curso
+                      </div>
+                      <Button 
+                        className="w-full" 
+                        size="lg"
+                        onClick={() => navigate('/student/dashboard')}
+                      >
+                        Ir para Meus Cursos
+                      </Button>
                     </div>
-                    <Button 
-                      className="w-full" 
-                      size="lg"
-                      onClick={handleEnrollCourse}
-                      disabled={enrolling}
-                    >
-                      {enrolling ? 'Inscrevendo...' : 'Inscrever-se agora'}
-                    </Button>
-                  </div>
+                  ) : (
+                    <div className="text-center">
+                      <div className="text-3xl font-bold text-primary mb-2">
+                        {course.is_free ? 'Grátis' : formatPrice(course.price)}
+                      </div>
+                      <Button 
+                        className="w-full" 
+                        size="lg"
+                        onClick={handleEnrollCourse}
+                        disabled={enrolling}
+                      >
+                        {enrolling ? 'Inscrevendo...' : 'Inscrever-se agora'}
+                      </Button>
+                    </div>
+                  )}
                   
                   <div className="pt-4 border-t space-y-2">
                     <div className="flex justify-between text-sm">
@@ -290,6 +384,16 @@ export default function CourseDetailPage() {
               </Card>
             </div>
           </div>
+
+          {/* Modal de Pagamento */}
+          {course && (
+            <PaymentModal
+              isOpen={paymentModalOpen}
+              onClose={() => setPaymentModalOpen(false)}
+              course={course}
+              onPaymentSuccess={handlePaymentSuccess}
+            />
+          )}
         </div>
       </div>
     </MainLayout>

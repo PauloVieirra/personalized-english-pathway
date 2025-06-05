@@ -2,11 +2,12 @@
 import React, { useEffect, useState } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import StudentSidebar from '@/components/student/StudentSidebar';
+import MyCourses from '@/components/student/MyCourses';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Book, CheckCircle } from 'lucide-react';
+import { Book, CheckCircle, Trophy } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import StudentRanking from '@/components/student/StudentRanking';
 import StudentCourseCarousel from '@/components/student/StudentCourseCarousel';
@@ -17,6 +18,7 @@ type DashboardStats = {
   totalLessons: number;
   completedLessons: number;
   averageScore: number;
+  totalCourses: number;
 };
 
 export default function StudentDashboard() {
@@ -27,6 +29,7 @@ export default function StudentDashboard() {
     totalLessons: 0,
     completedLessons: 0,
     averageScore: 0,
+    totalCourses: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -37,20 +40,20 @@ export default function StudentDashboard() {
       setLoading(true);
       try {
         // Get assigned lessons count and completed count
-        const { data, error } = await supabase
+        const { data: lessonsData, error: lessonsError } = await supabase
           .from('student_lessons')
           .select('*')
           .eq('student_id', userDetails.id);
 
-        if (error) throw error;
+        if (lessonsError) throw lessonsError;
 
-        const totalLessons = data?.length || 0;
-        const completedLessons = data?.filter(lesson => lesson.completed)?.length || 0;
+        const totalLessons = lessonsData?.length || 0;
+        const completedLessons = lessonsData?.filter(lesson => lesson.completed)?.length || 0;
         
         // Calculate average score from completed lessons
         let averageScore = 0;
         if (completedLessons > 0) {
-          const scores = data
+          const scores = lessonsData
             ?.filter(lesson => lesson.completed && lesson.score !== null)
             .map(lesson => lesson.score as number) || [];
             
@@ -59,10 +62,22 @@ export default function StudentDashboard() {
           }
         }
 
+        // Get purchased courses count
+        const { data: coursesData, error: coursesError } = await supabase
+          .from('course_purchases')
+          .select('*')
+          .eq('student_id', userDetails.id)
+          .eq('status', 'completed');
+
+        if (coursesError) throw coursesError;
+
+        const totalCourses = coursesData?.length || 0;
+
         setStats({
           totalLessons,
           completedLessons,
           averageScore,
+          totalCourses,
         });
       } catch (error) {
         console.error('Error loading dashboard stats:', error);
@@ -95,8 +110,21 @@ export default function StudentDashboard() {
           </div>
           
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div className="lg:col-span-2 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Cursos Adquiridos</CardTitle>
+                    <Trophy className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{loading ? '...' : stats.totalCourses}</div>
+                    <p className="text-xs text-muted-foreground">
+                      Total de cursos comprados
+                    </p>
+                  </CardContent>
+                </Card>
+                
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">{t('lessons')}</CardTitle>
@@ -124,7 +152,7 @@ export default function StudentDashboard() {
                 </Card>
               </div>
 
-              <Card className="mb-6">
+              <Card>
                 <CardHeader>
                   <CardTitle>{t('progress')}</CardTitle>
                 </CardHeader>
@@ -156,6 +184,11 @@ export default function StudentDashboard() {
                   )}
                 </CardContent>
               </Card>
+
+              {/* Seção de Meus Cursos */}
+              <div>
+                <MyCourses />
+              </div>
             </div>
 
             <div className="lg:col-span-1">
