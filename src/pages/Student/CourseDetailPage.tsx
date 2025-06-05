@@ -243,14 +243,6 @@ export default function CourseDetailPage() {
     );
   }
 
-  const formatPrice = (price: number | null) => {
-    if (price === null) return '';
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(price);
-  };
-
   return (
     <MainLayout requireAuth allowedRoles={['student']}>
       <div className="flex min-h-screen">
