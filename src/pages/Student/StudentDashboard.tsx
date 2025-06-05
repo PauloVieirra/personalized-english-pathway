@@ -10,7 +10,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Book, CheckCircle, Trophy } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import StudentRanking from '@/components/student/StudentRanking';
-import StudentCourseCarousel from '@/components/student/StudentCourseCarousel';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 
@@ -103,11 +102,6 @@ export default function StudentDashboard() {
         <StudentSidebar />
         <div className="flex-1 p-8">
           <h1 className="text-3xl font-bold mb-8">{t('dashboard')}</h1>
-          
-          {/* Carrossel de Cursos */}
-          <div className="mb-8">
-            <StudentCourseCarousel />
-          </div>
           
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
