@@ -48,6 +48,47 @@ export type Database = {
           },
         ]
       }
+      course_purchases: {
+        Row: {
+          amount: number | null
+          course_id: string
+          created_at: string
+          id: string
+          payment_method: string | null
+          status: string | null
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number | null
+          course_id: string
+          created_at?: string
+          id?: string
+          payment_method?: string | null
+          status?: string | null
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number | null
+          course_id?: string
+          created_at?: string
+          id?: string
+          payment_method?: string | null
+          status?: string | null
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_purchases_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       courses: {
         Row: {
           created_at: string

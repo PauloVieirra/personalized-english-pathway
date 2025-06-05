@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -29,6 +28,7 @@ export default function MyCourses() {
       if (!userDetails?.id) return;
 
       try {
+        // Usar a query correta que funciona com as políticas RLS
         const { data, error } = await supabase
           .from('course_purchases')
           .select(`
@@ -42,21 +42,27 @@ export default function MyCourses() {
               price
             )
           `)
-          .eq('student_id', userDetails.id)
           .eq('status', 'completed')
           .order('created_at', { ascending: false });
 
-        if (error) throw error;
+        if (error) {
+          console.error('Erro na query:', error);
+          throw error;
+        }
 
-        const formattedCourses = data.map((item: any) => ({
-          id: item.course.id,
-          title: item.course.title,
-          description: item.course.description,
-          image_url: item.course.image_url,
-          is_free: item.course.is_free,
-          price: item.course.price,
-          purchased_at: item.created_at
-        }));
+        console.log('Cursos encontrados:', data);
+
+        const formattedCourses = data
+          .filter(item => item.course) // Filtrar apenas itens com curso válido
+          .map((item: any) => ({
+            id: item.course.id,
+            title: item.course.title,
+            description: item.course.description,
+            image_url: item.course.image_url,
+            is_free: item.course.is_free,
+            price: item.course.price,
+            purchased_at: item.created_at
+          }));
 
         setCourses(formattedCourses);
       } catch (error) {

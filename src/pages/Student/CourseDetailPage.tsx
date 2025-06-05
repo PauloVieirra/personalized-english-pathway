@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import MainLayout from '@/components/layout/MainLayout';
 import StudentSidebar from '@/components/student/StudentSidebar';
 import PaymentModal from '@/components/student/PaymentModal';
@@ -63,10 +62,9 @@ export default function CourseDetailPage() {
           const { data: purchaseData } = await supabase
             .from('course_purchases')
             .select('*')
-            .eq('student_id', userDetails.id)
             .eq('course_id', courseId)
             .eq('status', 'completed')
-            .single();
+            .maybeSingle();
 
           setHasPurchased(!!purchaseData);
         }
@@ -123,7 +121,6 @@ export default function CourseDetailPage() {
         const { error } = await supabase
           .from('course_purchases')
           .insert({
-            student_id: userDetails.id,
             course_id: course.id,
             amount: 0,
             payment_method: 'free',
@@ -160,10 +157,9 @@ export default function CourseDetailPage() {
       const { error } = await supabase
         .from('course_purchases')
         .insert({
-          student_id: userDetails.id,
           course_id: course.id,
           amount: course.price || 0,
-          payment_method: 'card', // Será atualizado pelo modal
+          payment_method: 'card',
           status: 'completed'
         });
 
