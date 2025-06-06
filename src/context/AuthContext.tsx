@@ -36,43 +36,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log('Fetching user details for ID:', userId);
       
-      // Primeiro tentar buscar da tabela user_profile
-      let { data, error } = await supabase
+      // Buscar apenas da tabela user_profile
+      const { data, error } = await supabase
         .from('user_profile')
         .select('*')
         .eq('id', userId)
         .single();
 
-      if (error || !data) {
-        console.log('No data in user_profile, trying users table');
-        // Se não encontrar no user_profile, tentar da tabela users
-        const { data: userData, error: userError } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', userId)
-          .single();
-          
-        if (userError) {
-          console.error('Error fetching user details:', userError);
-          setUserDetails(null);
-          return;
-        }
-        
-        if (userData) {
-          console.log('Found user data in users table:', userData);
-          data = userData;
-        }
-      } else {
-        console.log('Found user data in user_profile:', data);
+      if (error) {
+        console.error('Error fetching user details:', error);
+        setUserDetails(null);
+        return;
       }
 
       if (data) {
+        console.log('Found user data in user_profile:', data);
         setUserDetails({
           id: data.id,
-          name: data.name,
-          email: data.email,
-          role: data.role,
-          status: data.status || 'active'
+          name: data.name || '',
+          email: data.email || '',
+          role: (data.role as 'teacher' | 'student' | 'admin') || 'student',
+          status: (data.status as 'active' | 'blocked') || 'active'
         });
       }
     } catch (error) {
@@ -181,31 +165,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error('Falha ao criar usuário');
       }
 
-      console.log('Usuário criado. Inserindo dados nas tabelas...');
+      console.log('Usuário criado. Inserindo dados na tabela user_profile...');
       
-      // Adicionar detalhes do usuário na tabela users (para compatibilidade)
-      const { error: usersError } = await supabase.from('users').insert([
-        {
-          id: authData.user.id,
-          email,
-          name,
-          role,
-          status: 'active',
-        },
-      ]);
-
-      if (usersError) {
-        console.error('Erro ao criar registro na tabela users:', usersError);
-        // Não impede o fluxo - vamos tentar registrar no user_profile
-      }
-      
-      // Adicionar detalhes do usuário na nova tabela user_profile
+      // Adicionar detalhes do usuário na tabela user_profile
       const { error: profileError } = await supabase.from('user_profile').insert([
         {
           id: authData.user.id,
           email,
           name,
           role,
+          status: 'active',
         },
       ]);
 
