@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import StudentSidebar from '@/components/student/StudentSidebar';
@@ -96,6 +95,10 @@ export default function StudentDashboard() {
     navigate('/student/ranking');
   };
 
+  const handleViewPurchaseHistory = () => {
+    navigate('/student/purchase-history');
+  };
+
   return (
     <MainLayout requireAuth allowedRoles={['student']}>
       <div className="flex min-h-screen">
@@ -106,7 +109,10 @@ export default function StudentDashboard() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Card>
+                <Card 
+                  className="cursor-pointer hover:shadow-lg transition-shadow"
+                  onClick={handleViewPurchaseHistory}
+                >
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Cursos Adquiridos</CardTitle>
                     <Trophy className="h-4 w-4 text-muted-foreground" />
@@ -116,6 +122,9 @@ export default function StudentDashboard() {
                     <p className="text-xs text-muted-foreground">
                       Total de cursos comprados
                     </p>
+                    <Button variant="ghost" size="sm" className="mt-2 p-0 h-auto text-xs">
+                      Ver histórico →
+                    </Button>
                   </CardContent>
                 </Card>
                 

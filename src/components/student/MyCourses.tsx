@@ -84,8 +84,9 @@ export default function MyCourses() {
     }).format(price);
   };
 
+  // Função para navegar para o conteúdo do curso
   const handleCourseClick = (courseId: string) => {
-    navigate(`/student/course/${courseId}`);
+    navigate(`/student/course/${courseId}/lessons`);
   };
 
   if (loading) {
@@ -131,7 +132,11 @@ export default function MyCourses() {
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {courses.map((course) => (
-          <Card key={course.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+          <Card 
+            key={course.id} 
+            className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+            onClick={() => handleCourseClick(course.id)}
+          >
             {course.image_url && (
               <div className="aspect-video">
                 <img
@@ -171,10 +176,13 @@ export default function MyCourses() {
               
               <Button 
                 className="w-full" 
-                onClick={() => handleCourseClick(course.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleCourseClick(course.id);
+                }}
               >
                 <Play className="mr-2 h-4 w-4" />
-                Continuar Estudos
+                Acessar Conteúdo
               </Button>
             </CardContent>
           </Card>
