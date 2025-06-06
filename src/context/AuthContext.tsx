@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { Session, User } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 
 type AuthContextType = {
@@ -19,10 +20,8 @@ type AuthContextType = {
   signOut: () => Promise<void>;
 };
 
-// Create the context with an undefined initial value
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Log that the context has been created
 console.log('AuthContext created');
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -33,45 +32,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  useEffect(() => {
-    console.log('AuthProvider useEffect running');
-    // Configurar listener para mudanças no estado de autenticação
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
-      console.log('Auth state changed:', event);
-      setSession(newSession);
-      setUser(newSession?.user ?? null);
-      
-      if (newSession?.user) {
-        await fetchUserDetails(newSession.user.id);
-      } else {
-        setUserDetails(null);
-      }
-      
-      setIsLoading(false);
-    });
-
-    // Verificar sessão inicial
-    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
-      console.log('Initial session check:', initialSession ? 'Found session' : 'No session');
-      setSession(initialSession);
-      setUser(initialSession?.user ?? null);
-      
-      if (initialSession?.user) {
-        fetchUserDetails(initialSession.user.id);
-      } else {
-        setIsLoading(false);
-      }
-    });
-
-    return () => {
-      console.log('Unsubscribing from auth changes');
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  const fetchUserDetails = async (userId: string) => {
+  const fetchUserDetails = useCallback(async (userId: string) => {
     try {
       console.log('Fetching user details for ID:', userId);
+      
       // Primeiro tentar buscar da tabela user_profile
       let { data, error } = await supabase
         .from('user_profile')
@@ -111,14 +75,64 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           status: data.status || 'active'
         });
       }
-      
-      setIsLoading(false);
     } catch (error) {
       console.error('Error fetching user details:', error);
       setUserDetails(null);
-      setIsLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    console.log('AuthProvider useEffect running');
+    let mounted = true;
+
+    // Configurar listener para mudanças no estado de autenticação
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
+      if (!mounted) return;
+      
+      console.log('Auth state changed:', event);
+      setSession(newSession);
+      setUser(newSession?.user ?? null);
+      
+      if (newSession?.user && event !== 'TOKEN_REFRESHED') {
+        await fetchUserDetails(newSession.user.id);
+      } else if (!newSession) {
+        setUserDetails(null);
+      }
+      
+      setIsLoading(false);
+    });
+
+    // Verificar sessão inicial
+    const getInitialSession = async () => {
+      try {
+        const { data: { session: initialSession } } = await supabase.auth.getSession();
+        if (!mounted) return;
+        
+        console.log('Initial session check:', initialSession ? 'Found session' : 'No session');
+        setSession(initialSession);
+        setUser(initialSession?.user ?? null);
+        
+        if (initialSession?.user) {
+          await fetchUserDetails(initialSession.user.id);
+        }
+        
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Error getting initial session:', error);
+        if (mounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    getInitialSession();
+
+    return () => {
+      mounted = false;
+      console.log('Unsubscribing from auth changes');
+      subscription.unsubscribe();
+    };
+  }, [fetchUserDetails]);
 
   const signIn = async (email: string, password: string) => {
     try {
@@ -134,11 +148,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           variant: 'destructive',
         });
         throw error;
-      }
-
-      // Buscar detalhes do usuário após login bem-sucedido
-      if (data.user) {
-        await fetchUserDetails(data.user.id);
       }
 
       toast({
@@ -209,15 +218,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
         throw profileError;
       }
-
-      // Atualizar userDetails após registro bem-sucedido
-      setUserDetails({
-        id: authData.user.id,
-        email,
-        name,
-        role,
-        status: 'active'
-      });
 
       toast({
         title: 'Conta criada com sucesso',
