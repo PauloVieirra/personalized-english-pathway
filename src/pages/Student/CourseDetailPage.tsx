@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -121,6 +122,7 @@ export default function CourseDetailPage() {
         const { error } = await supabase
           .from('course_purchases')
           .insert({
+            student_id: userDetails.id,
             course_id: course.id,
             amount: 0,
             payment_method: 'free',
@@ -157,6 +159,7 @@ export default function CourseDetailPage() {
       const { error } = await supabase
         .from('course_purchases')
         .insert({
+          student_id: userDetails.id,
           course_id: course.id,
           amount: course.price || 0,
           payment_method: 'card',
